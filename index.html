@@ -1,5 +1,4 @@
-<!doctype html>
-<html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
 <title>Trainer Prozentrechnung</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <style>
@@ -124,12 +123,23 @@ input[type=text]{font:inherit;border:2px solid var(--glasrand);background:rgba(0
 .fb.hinweis{background:#FFF3B0;color:#7a5a00}
 .fb > span{display:block;font-weight:400;color:var(--tinte);margin-top:4px}
 .fb span.fr{display:inline-flex;margin:0 .12em}.fb .fr span{display:block;margin:0}
+.form{display:flex;flex-direction:column;gap:16px;font-size:1.25rem}
+.glw,.glx{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.glb{display:inline-flex;flex-direction:column;align-items:center;gap:6px;font-weight:700}
+.glb .oben{border-bottom:3px solid #111;padding:0 6px 8px}
+.glb > span:last-child{min-height:52px;display:flex;align-items:center;gap:6px}
+.gleich{font-size:1.6rem;font-weight:700}
+.form input.fx{font:inherit;font-size:1.25rem;width:5em;text-align:center;border:2.5px solid #1b2559;border-radius:12px;padding:6px;color:#111;background:#fff}
+.form input.fx.satz{display:block;width:100%;box-sizing:border-box;text-align:left;margin-top:6px;font-weight:400}
+.form input.fx.gelb{background:#FFF3B0;border-color:#C99700}
+.form input.fx.gut{background:var(--okbg);border-color:var(--ok)}
+.form input.fx.schlecht{background:var(--errbg);border-color:var(--err)}
+.form .einheit,.satzlab{font-weight:700}
 .dot.gelb{background:#ffd54a;border-color:#ffd54a}
 .fehlz{font-weight:700;font-size:.95rem;background:rgba(255,255,255,.12);border:1.5px solid rgba(255,255,255,.3);border-radius:999px;padding:5px 14px}
 .fehlz.zuviel{background:#ff6b6b;border-color:#ff6b6b;color:#fff}
 </style>
 
-</head><body>
 <svg id="himmel" aria-hidden="true"></svg>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
   <linearGradient id="gold" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff2a8"/><stop offset=".45" stop-color="#ffd23f"/><stop offset="1" stop-color="#f29a00"/></linearGradient>
@@ -170,7 +180,10 @@ const LEVELS=[
     {id:"1b",nr:"1-2",name:"Prozent und Promille",gen:g1b},
     {id:"1c",nr:"1-3",name:"G, W und p % erkennen",gen:g1c},
     {id:"1d",nr:"1-4",name:"Prozentwert im Kopf",gen:g1d}]},
-  {nr:2,name:"Prozentwert",spiele:null,info:"kommt bald"},
+  {nr:2,name:"Prozentwert",spiele:[
+    {id:"2a",nr:"2-1",name:"Verhältnisgleichung",gen:g2a},
+    {id:"2b",nr:"2-2",name:"Taschenrechner",gen:g2b},
+    {id:"2c",nr:"2-3",name:"Sachaufgaben",gen:g2c,runde:5}]},
   {nr:3,name:"Prozentsatz",spiele:null,info:"kommt bald"},
   {nr:4,name:"Grundwert",spiele:null,info:"kommt bald"},
   {nr:5,name:"Rabatte &amp; Co.",spiele:null,info:"kommt bald"}];
@@ -280,6 +293,90 @@ function g1d(lv){
   const W=rund(KM[p].f(G));
   return num(`${p} % von ${G} € = ? €`,W,"€",`${p} % von G: G ${KM[p].w}. ${G} € ${KM[p].w} = ${dez(W)} €.`);
 }
+
+/* ================= Level 2 · Prozentwert ================= */
+/* Sterne: 0★ glatte Prozentsätze · 1★ Taschenrechner-Zahlen · 2★ Kommazahlen und über 100 % */
+const P2=[[10,20,25,50,5,2,30,40,60,75,1],[3,7,8,12,14,15,17,22,35,45,65],[2.5,4.5,12.5,7.5,0.5,0.8,1.5,110,125,150]];
+const G2=[[40,60,80,120,200,240,300,400,450,500,600,800],[150,250,350,480,500,650,700,900,1200,2400],[60,80,160,240,400,480,800,1200,2000,3500]];
+const nk=x=>{const s=String(rund(x));return s.includes(".")?s.split(".")[1].length:0;};
+function pw(lv,maxNk,ps,gs){ps=ps||P2[lv];gs=gs||G2[lv];
+  for(let k=0;k<400;k++){const p=pick(ps),G=pick(gs),W=rund(G*p/100);if(nk(W)<=maxNk)return{p,G,W};}
+  return{p:10,G:450,W:45};}
+const zahl=s=>parseFloat(String(s).replace(/\s/g,"").replace(",",".").replace(/[%‰€°]/g,""));
+const gleich=(a,b)=>!isNaN(a)&&Math.abs(a-b)<1e-9;
+const eqN=(s,n)=>gleich(zahl(s),n);
+const eqX=s=>String(s).trim().toLowerCase()==="x";
+const fmt=(W,u)=>u==="€"&&nk(W)===1?W.toFixed(2).replace(".",","):dez(W);
+const glZeile=(G,p)=>`${fr(G_(G),"100 %")} = ${fr(W_("x"),P_(dez(p)+" %"))}`;
+const kreuz=(G,p,W)=>`x = ${G} · ${dez(p)} : 100 → x = ${dez(rund(G*p))} : 100 → x = ${dez(W)}`;
+const fx=(k,lab,mode)=>`<input type="text" class="fx" data-k="${k}" inputmode="${mode||"decimal"}" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="${lab}">`;
+const glForm=()=>`<div class="glw"><span class="glb"><span class="oben">${fx(0,"Zähler links","text")}</span><span>100 %</span></span><span class="gleich">=</span><span class="glb"><span class="oben">${fx(1,"Zähler rechts","text")}</span><span>${fx(2,"Nenner rechts","text")} %</span></span></div>`;
+
+/* 2-1 Verhältnisgleichung: Aufgabe 1–3 nur einsetzen · 4–6 einsetzen und ausrechnen · 7–10 auf Papier, nur Ergebnis */
+function g2a(lv,i){
+  if(i==null)i=rnd(0,9);
+  const {p,G,W}=pw(lv,lv?2:0), auf=`${dez(p)} % von ${G}`;
+  const ex=`Hinter „von“ steht ${G_("G = "+G)}, ${P_("p % = "+dez(p)+" %")}, gesucht ist ${W_("W = x")}.<br>${glZeile(G,p)} → ${kreuz(G,p,W)}`;
+  const tipp=v=>eqN(v[0],p)&&eqN(v[2],G)?"G und p % sind vertauscht. Was ist das Ganze? Hinter „von“ steht G.":eqN(v[1],G)||eqN(v[1],p)?"Oben rechts steht die gesuchte Größe x.":"";
+  if(i<3)return{q:`Setze in die Verhältnisgleichung ein: <b>${auf}</b>`,form:glForm(),kat:G+"|"+p,
+    check:v=>[eqN(v[0],G),eqX(v[1]),eqN(v[2],p)],tipp,loes:glZeile(G,p),ex};
+  if(i<6)return{q:`Stelle die Verhältnisgleichung auf und rechne aus: <b>${auf}</b>`,
+    form:glForm()+`<div class="glx">x = ${fx(3,"Ergebnis x")}</div>`,kat:String(W),
+    check:v=>[eqN(v[0],G),eqX(v[1]),eqN(v[2],p),eqN(v[3],W)],tipp,loes:`${glZeile(G,p)} und x = ${dez(W)}`,ex};
+  return Object.assign(num(`Rechne auf Papier mit der Verhältnisgleichung. Trage nur das Ergebnis ein.<br><b>${auf}</b> = ?`,W,"",ex),{label:"W ="});
+}
+
+/* 2-2 Taschenrechner: Aufgabe 1–3 nur die Eingabe · 4–10 nur das Ergebnis */
+function g2b(lv,i){
+  if(i==null)i=rnd(0,9);
+  const {p,G,W}=pw(lv,lv?2:0), d=rund(p/100), auf=`${dez(p)} % von ${G}`;
+  const falle=Number.isInteger(p)&&p<10?` Achtung: ${p} % = ${dez(d)}, nicht ${dez(p/10)}.`:"";
+  const ex=`${P_(dez(p)+" %")} = ${P_(dez(d))}. Eingabe: ${dez(d)} · ${G} = ${dez(W)}.${falle}`;
+  if(i<3)return{q:`Was tippst du in den Taschenrechner? <b>${auf}</b>`,
+    form:`<div class="glw">${fx(0,"erste Zahl")}<span class="gleich">·</span>${fx(1,"zweite Zahl")}</div>`,kat:dez(d)+"|"+G,
+    check:v=>{const a=zahl(v[0]),b=zahl(v[1]);return[(gleich(a,d)&&!gleich(b,d))||(gleich(a,G)&&!gleich(b,G)),(gleich(b,d)&&!gleich(a,d))||(gleich(b,G)&&!gleich(a,G))];},
+    tipp:v=>v.some(x=>eqN(x,p)||eqN(x,p/10))?"Schreibe den Prozentsatz als Dezimalzahl.":"",
+    loes:`${dez(d)} · ${G}`,ex};
+  return Object.assign(num(`Berechne mit dem Taschenrechner: <b>${auf}</b> = ?`,W,"",ex),{label:"W ="});
+}
+
+/* 2-3 Sachaufgaben: Ergebnis und Antwortsatz, Runde = 5 Aufgaben */
+const SACH=[
+ {u:"",G:[[20,25,30,40],[25,28,32,50],[24,40,80]],t:(G,p)=>`In der Klasse 7b sind ${G} Schüler. ${p} % von ihnen fahren mit dem Bus. Wie viele Schüler fahren mit dem Bus?`,a:W=>`${W} Schüler fahren mit dem Bus.`},
+ {u:"€",t:(G,p)=>`Ein Fahrrad kostet ${G} €. Es gibt ${p} % Rabatt. Wie viel Euro spart man?`,a:W=>`Man spart ${W} €.`},
+ {u:"g",G:[[100,200,300],[100,150,200,250,300],[100,200,250,400]],t:(G,p)=>`Eine Tafel Schokolade wiegt ${G} g. Sie besteht zu ${p} % aus Zucker. Wie viel Gramm Zucker sind das?`,a:W=>`In der Schokolade sind ${W} g Zucker.`},
+ {u:"€",t:(G,p)=>`Ein Smartphone kostet ${G} €. Beim Kauf zahlt man ${p} % an. Wie hoch ist die Anzahlung?`,a:W=>`Die Anzahlung beträgt ${W} €.`},
+ {u:"",G:[[100,200,300,500],[250,350,400,600],[400,800,1200,2000]],t:(G,p)=>`Bei einer Tombola gibt es ${G} Lose. ${p} % davon sind Gewinne. Wie viele Gewinnlose gibt es?`,a:W=>`Es gibt ${W} Gewinnlose.`},
+ {u:"km",G:[[10,12,20,30],[15,18,24,35],[12,16,24,32]],t:(G,p)=>`Eine Wanderung ist ${G} km lang. Bis zur Mittagspause hat die Klasse ${p} % geschafft. Wie viele Kilometer sind das?`,a:W=>`Die Klasse ist schon ${W} km gewandert.`},
+ {u:"€",t:(G,p)=>`Eine Reise kostet ${G} €. Frühbucher bekommen ${p} % Rabatt. Wie viel Euro sparen Frühbucher?`,a:W=>`Frühbucher sparen ${W} €.`},
+ {u:"€",G:[[400,600,800,1200],[840,960,1250,1500],[800,1200,1600,2400]],t:(G,p)=>`Die Klassenfahrt kostet insgesamt ${G} €. Der Förderverein übernimmt ${p} %. Wie viel Euro zahlt der Förderverein?`,a:W=>`Der Förderverein zahlt ${W} €.`},
+ {u:"",G:[[200,500,1000],[1200,1500,2400],[2400,4000,8000]],t:(G,p)=>`Eine Firma stellt ${G} Fahrradreifen her. ${p} % davon haben einen Fehler. Wie viele Reifen haben einen Fehler?`,a:W=>`${W} Reifen haben einen Fehler.`},
+ {u:"ml",G:[[200,500,1000],[330,500,750,1000],[750,1000,1500]],t:(G,p)=>`Eine Flasche enthält ${G} ml Saftschorle. ${p} % davon sind Fruchtsaft. Wie viel Milliliter Fruchtsaft sind das?`,a:W=>`In der Flasche sind ${W} ml Fruchtsaft.`},
+ {u:"€",G:[[20,30,40,50],[25,35,45,60],[40,80,120]],t:(G,p)=>`Tom bekommt ${G} € Taschengeld im Monat. Er spart ${p} % davon. Wie viel Euro spart er?`,a:W=>`Tom spart ${W} € im Monat.`},
+ {u:"",ueber:true,G:[null,null,[80,120,160,200,240]],t:(G,p)=>`Ein Sportverein hatte im letzten Jahr ${G} Mitglieder. In diesem Jahr sind es ${p} % davon. Wie viele Mitglieder hat der Verein jetzt?`,a:W=>`Der Verein hat jetzt ${W} Mitglieder.`},
+ {u:"cm",ueber:true,G:[null,null,[20,40,60,80]],t:(G,p)=>`Eine Sonnenblume war vor einer Woche ${G} cm hoch. Jetzt ist sie ${p} % so hoch wie vorher. Wie hoch ist sie jetzt?`,a:W=>`Die Sonnenblume ist jetzt ${W} cm hoch.`}];
+const EINHEITEN={"€":["€","euro"],"g":["g","gramm"],"km":["km","kilometer"],"ml":["ml","milliliter"],"cm":["cm","zentimeter"]};
+function satzPruef(s,W,u){
+  const t=String(s).trim(), worte=t.split(/\s+/).filter(Boolean).length>=3;
+  const zahlen=(t.replace(/(\d)[\s.](?=\d{3}(?!\d))/g,"$1").match(/\d+(?:,\d+)?/g)||[]).map(x=>parseFloat(x.replace(",",".")));
+  const hatZahl=zahlen.some(z=>gleich(z,W));
+  const low=t.toLowerCase();
+  const hatEinheit=!u||(EINHEITEN[u]||[u]).some(e=>new RegExp(`(^|[^a-zäöüß])${e.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")}(?![a-zäöüß])`).test(low));
+  return{ok:worte&&hatZahl&&hatEinheit,worte,hatZahl,hatEinheit};
+}
+function g2c(lv){
+  const pool=SACH.filter(s=>lv===2||!s.ueber), s=lv===2&&rnd(0,3)===0?pick(SACH.filter(x=>x.ueber)):pick(pool.filter(x=>!x.ueber||lv===2));
+  const ps=s.ueber?[110,120,125,150,175]:lv===2?P2[2].filter(p=>p<100):P2[lv];
+  const gs=(s.G&&s.G[lv])||G2[lv];
+  const {p,G,W}=pw(lv,s.u?(lv?2:0):0,ps,gs), u=s.u, w=fmt(W,u), muster=s.a(w);
+  const ex=`${G_("G = "+G+(u?" "+u:""))} ist das Ganze, ${P_("p % = "+dez(p)+" %")}, gesucht ist ${W_("W = x")}.<br>${glZeile(G,p)} → ${kreuz(G,p,W)}<br>Antwort: „${muster}“`;
+  return{q:s.t(G,dez(p)),kat:String(W),
+    form:`<div class="glx"><span>W =</span>${fx(0,"Ergebnis")}${u?`<span class="einheit">${u}</span>`:""}</div><label class="satzlab">Antwortsatz:${fx(1,"Antwortsatz","text").replace('class="fx"','class="fx satz"')}</label>`,
+    check:v=>[eqN(v[0],W),satzPruef(v[1],W,u).ok],
+    tipp:(v,r)=>{if(r[1])return"";const c=satzPruef(v[1],W,u);return !c.worte?"Schreibe einen ganzen Satz.":!c.hatZahl?"Im Antwortsatz fehlt das richtige Ergebnis.":"Im Antwortsatz fehlt die Einheit.";},
+    loes:`W = ${w}${u?" "+u:""}. Antwort: „${muster}“`,ex};
+}
+
 const BOSS={id:"m",name:"Endgegner",gen:lv=>{const t=pick(ALLE);return t.gen(Math.min(2,1+lv));}};
 
 /* ================= Ansichten ================= */
@@ -297,7 +394,7 @@ const ruhig=window.matchMedia&&window.matchMedia("(prefers-reduced-motion: reduc
 let lehrerMsg="";
 function home(){
   zahlEl.textContent=summe();mzahl.textContent=S.muenzen;
-  let h=`<p class="sub">Schaffe eine Runde mit ${RUNDE} Aufgaben und höchstens ${FEHLER_ERLAUBT} Fehlern, dann bekommst du einen Stern. Ist deine erste Antwort falsch, hast du noch einen zweiten Versuch. Jeder Stern macht das Spiel schwerer. Der erste Stern öffnet das nächste Spiel. Hast du schon drei Sterne, gibt es Bonussterne, und ${BONUS_PRO_MUENZE} Bonussterne werden zu einem Credit.</p><div class="levels">`;
+  let h=`<p class="sub">Schaffe eine Runde mit ${RUNDE} Aufgaben (bei Sachaufgaben 5) und höchstens ${FEHLER_ERLAUBT} Fehlern, dann bekommst du einen Stern. Ist deine erste Antwort falsch, hast du noch einen zweiten Versuch. Jeder Stern macht das Spiel schwerer. Der erste Stern öffnet das nächste Spiel. Hast du schon drei Sterne, gibt es Bonussterne, und ${BONUS_PRO_MUENZE} Bonussterne werden zu einem Credit.</p><div class="levels">`;
   for(const L of LEVELS){
     if(!L.spiele){h+=`<section class="lv zu"><div class="badge">🔒</div><div class="lvkopf"><div><div class="tag">LEVEL ${L.nr}</div><h2>${L.name}</h2></div><div class="klein">${L.info}</div></div></section>`;continue;}
     const n=L.spiele.length, max=n*3, hat=L.spiele.reduce((a,s)=>a+stars(s.id),0);
@@ -332,16 +429,16 @@ function home(){
 }
 
 let R=null, letzte="";
-const schluessel=a=>a.q+"|"+(a.svg||"")+"|"+(a.opts?a.opts.slice().sort().join("/"):a.num);
+const schluessel=a=>a.q+"|"+(a.svg||"")+"|"+(a.opts?a.opts.slice().sort().join("/"):a.form?a.loes:a.num);
 function start(id){
   zahlEl.textContent=summe();
   const spiel=id==="m"?BOSS:ALLE.find(t=>t.id===id);
   const lv=Math.min(2,stars(id));
-  R={spiel,id,lv,i:0,res:[],aufgaben:[]};
+  R={spiel,id,lv,n:spiel.runde||RUNDE,i:0,res:[],aufgaben:[]};
   const seen=new Set();let versuche=0,grenz=0;
   const kat=a=>a.kat||(a.opts?a.opts[a.ans]:a.q);
-  while(R.aufgaben.length<RUNDE){
-    const a=spiel.gen(lv), k=schluessel(a), n=R.aufgaben.length, vorher=n?schluessel(R.aufgaben[n-1]):letzte;
+  while(R.aufgaben.length<R.n){
+    const a=spiel.gen(lv,R.aufgaben.length), k=schluessel(a), n=R.aufgaben.length, vorher=n?schluessel(R.aufgaben[n-1]):letzte;
     versuche++;
     if(k===vorher)continue;                                   /* nie zweimal dieselbe Aufgabe hintereinander */
     if(versuche<2000){
@@ -352,7 +449,7 @@ function start(id){
     if(a.grenz)grenz++;
     seen.add(k);R.aufgaben.push(a);
   }
-  letzte=schluessel(R.aufgaben[RUNDE-1]);
+  letzte=schluessel(R.aufgaben[R.n-1]);
   show();
 }
 const punkte=()=>`<div class="dots" aria-label="Fortschritt">${R.aufgaben.map((_,i)=>`<span class="dot ${R.res[i]===true?"ok":R.res[i]==="gelb"?"gelb":R.res[i]===false?"err":i===R.i?"now":""}"></span>`).join("")}</div>`;
@@ -366,16 +463,25 @@ function show(){
   const T=x=>HTML?x:esc(x), EINH=a.unit!=null?a.unit:STD_EINHEIT;
   let h=kopf()+`<section class="card"><p class="frage">${T(a.q)}</p>${a.svg?`<div class="fig">${a.svg}</div>`:""}`;
   if(a.opts)h+=`<div class="opts">${a.opts.map((o,i)=>`<button data-o="${i}">${T(o)}</button>`).join("")}</div>`;
-  else h+=`<div class="num" id="numForm"><label for="ein">Antwort:</label><input type="text" id="ein" inputmode="decimal" autocomplete="off"> <span class="einheit">${EINH}</span><button class="btn" type="button" id="pruefBtn">Prüfen</button></div>`;
+  else if(a.form)h+=`<div class="form">${a.form}<div><button class="btn" type="button" id="pruefBtn">Prüfen</button></div></div>`;
+  else h+=`<div class="num" id="numForm"><label for="ein">${a.label||"Antwort:"}</label><input type="text" id="ein" inputmode="decimal" autocomplete="off"> <span class="einheit">${EINH}</span><button class="btn" type="button" id="pruefBtn">Prüfen</button></div>`;
   h+=`<div id="fb"></div></section>`;
   app.innerHTML=h;
   document.getElementById("abbr").addEventListener("click",home);
-  const hinweis=()=>{document.getElementById("fb").innerHTML=`<div class="fb hinweis">Prüfe noch einmal! <span>Du hast noch einen zweiten Versuch.</span></div>`;};
+  const hinweis=(extra)=>{document.getElementById("fb").innerHTML=`<div class="fb hinweis">Prüfe noch einmal! <span>Du hast noch einen zweiten Versuch.${extra?" "+extra:""}</span></div>`;};
   if(a.opts)app.querySelectorAll("[data-o]").forEach(b=>b.addEventListener("click",()=>{
     const k=+b.dataset.o;
     if(k!==a.ans&&R.versuch===0){R.versuch=1;b.classList.add("gelb");b.disabled=true;hinweis();return;}
     app.querySelectorAll("[data-o]").forEach(x=>{x.disabled=true;x.classList.remove("gelb");if(+x.dataset.o===a.ans)x.classList.add("richtig");});
     if(k!==a.ans)b.classList.add("falsch");feedback(k===a.ans,a);}));
+  else if(a.form){const ins=[...app.querySelectorAll(".fx")], btnP=document.getElementById("pruefBtn");ins[0].focus();
+    ins.forEach(x=>x.addEventListener("input",()=>x.classList.remove("gelb")));
+    const pruef=()=>{const v=ins.map(x=>x.value);
+      if(v.some(x=>!x.trim())){document.getElementById("fb").innerHTML=`<div class="fb hinweis">Fülle zuerst alle Felder aus.</div>`;return;}
+      const r=a.check(v), ok=r.every(Boolean);
+      if(!ok&&R.versuch===0){R.versuch=1;ins.forEach((x,k)=>x.classList.toggle("gelb",!r[k]));hinweis(a.tipp?a.tipp(v,r):"");return;}
+      ins.forEach((x,k)=>{x.disabled=true;x.classList.remove("gelb");x.classList.add(r[k]?"gut":"schlecht");});btnP.disabled=true;feedback(ok,a);};
+    btnP.addEventListener("click",pruef);ins.forEach(x=>x.addEventListener("keydown",ev=>{if(ev.key==="Enter"){ev.preventDefault();pruef();}}));}
   else{const inp=document.getElementById("ein");inp.focus();
     inp.addEventListener("input",()=>inp.classList.remove("gelb"));
     const btnP=document.getElementById("pruefBtn");const pruef=()=>{
@@ -387,12 +493,12 @@ function show(){
 }
 function feedback(ok,a){
   R.res[R.i]=ok?(R.versuch?"gelb":true):false;const EINH=a.unit!=null?a.unit:STD_EINHEIT;
-  document.getElementById("fb").innerHTML=`<div class="fb ${ok?"ok":"err"}">${ok?(R.versuch?"Richtig – im zweiten Versuch!":"Richtig!"):"Leider falsch."+(a.num!=null?` Richtig ist ${dez(a.num)}${EINH?(EINH==="°"?"":" ")+EINH:""}.`:"")}<span class="ex">${HTML?a.ex:esc(a.ex)}</span></div>
-    <div class="row" style="margin-top:12px"><button class="btn" id="weiter">${R.i<RUNDE-1?"Weiter ▶":"Zum Ergebnis ▶"}</button></div>`;
+  document.getElementById("fb").innerHTML=`<div class="fb ${ok?"ok":"err"}">${ok?(R.versuch?"Richtig – im zweiten Versuch!":"Richtig!"):"Leider falsch."+(a.loes?` Richtig ist: ${a.loes}`:a.num!=null?` Richtig ist ${dez(a.num)}${EINH?(EINH==="°"?"":" ")+EINH:""}.`:"")}<span class="ex">${HTML?a.ex:esc(a.ex)}</span></div>
+    <div class="row" style="margin-top:12px"><button class="btn" id="weiter">${R.i<R.n-1?"Weiter ▶":"Zum Ergebnis ▶"}</button></div>`;
   app.querySelector(".dots").outerHTML=punkte();
   const fz=document.getElementById("fehlz");if(fz)fz.outerHTML=fehlerAnzeige();
   const w=document.getElementById("weiter");w.focus();
-  w.addEventListener("click",()=>{R.i++;R.i<RUNDE?show():ende();});
+  w.addEventListener("click",()=>{R.i++;R.i<R.n?show():ende();});
 }
 function geschafftText(){const f=R.res.filter(x=>x===false).length,z=R.res.filter(x=>x==="gelb").length;
   const zt=z?`${z} ${z===1?"Zweitversuch":"Zweitversuchen"}`:"";
@@ -400,7 +506,7 @@ function geschafftText(){const f=R.res.filter(x=>x===false).length,z=R.res.filte
   if(!f)return `Geschafft ohne Fehler mit ${zt}!`;
   return `Geschafft mit ${f} ${f===1?"Fehler":"Fehlern"}${z?" und "+zt:""}!`;}
 function ende(){
-  const richtig=R.res.filter(x=>x).length, fehler=RUNDE-richtig, geschafft=fehler<=FEHLER_ERLAUBT;
+  const richtig=R.res.filter(x=>x).length, fehler=R.n-richtig, geschafft=fehler<=FEHLER_ERLAUBT;
   const vorherOffen=ALLE.filter(offen).length, bossVorher=bossOffen(), alt=summe();
   let neuStern=false,bonus=false,neueMuenze=false;
   if(geschafft&&stars(R.id)<3){S.stars[R.id]=stars(R.id)+1;neuStern=true;save();}
@@ -409,7 +515,7 @@ function ende(){
   const neuSpiel=ALLE.filter(offen).length>vorherOffen, neuBoss=!bossVorher&&bossOffen();
   let txt;
   if(geschafft)txt=neuStern?(geschafftText()+" Du bekommst einen Stern."):(neueMuenze?"Bonusstern! Fünf Bonussterne sind voll: Du bekommst einen Credit!":"Bonusstern! Sammle weiter für den nächsten Credit.");
-  else txt=`${richtig} von ${RUNDE} richtig. Mit höchstens ${FEHLER_ERLAUBT} Fehlern bekommst du einen Stern. Versuch es gleich noch einmal!`;
+  else txt=`${richtig} von ${R.n} richtig. Mit höchstens ${FEHLER_ERLAUBT} Fehlern bekommst du einen Stern. Versuch es gleich noch einmal!`;
   const banner=neuBoss?`<div class="banner">⚔ Der Endgegner ist erschienen!</div>`:neuSpiel?`<div class="banner">🔓 Ein neues Spiel ist freigeschaltet!</div>`:"";
   const s=stars(R.id), zeigt=neuStern?s-1:s;
   app.innerHTML=kopf()+`<section class="card ende"><div class="gross" id="gross">${reihe(zeigt,STERN_KARTE)}</div><p class="frage">${txt}</p>${bonus?`<div class="topf" aria-label="Bonussterne bis zum nächsten Credit">${neueMuenze?"":Array.from({length:BONUS_PRO_MUENZE},(_,i)=>`<i class="${i<S.topf?"voll":""}"></i>`).join("")} <svg viewBox="0 0 300 300"><use href="#credit"/></svg></div>`:""}${banner}
