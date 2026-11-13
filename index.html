@@ -184,7 +184,10 @@ const LEVELS=[
     {id:"2a",nr:"2-1",name:"Verhältnisgleichung",gen:g2a},
     {id:"2b",nr:"2-2",name:"Taschenrechner",gen:g2b},
     {id:"2c",nr:"2-3",name:"Sachaufgaben",gen:g2c,runde:5}]},
-  {nr:3,name:"Prozentsatz",spiele:null,info:"kommt bald"},
+  {nr:3,name:"Prozentsatz",spiele:[
+    {id:"3a",nr:"3-1",name:"p % berechnen",gen:g3a},
+    {id:"3b",nr:"3-2",name:"Sachaufgaben",gen:g3b,runde:5},
+    {id:"3c",nr:"3-3",name:"Prozentsätze erkennen",gen:g3c}]},
   {nr:4,name:"Grundwert",spiele:null,info:"kommt bald"},
   {nr:5,name:"Rabatte &amp; Co.",spiele:null,info:"kommt bald"}];
 const ALLE=LEVELS.flatMap(l=>l.spiele||[]);
@@ -375,6 +378,99 @@ function g2c(lv){
     check:v=>[eqN(v[0],W),satzPruef(v[1],W,u).ok],
     tipp:(v,r)=>{if(r[1])return"";const c=satzPruef(v[1],W,u);return !c.worte?"Schreibe einen ganzen Satz.":!c.hatZahl?"Im Antwortsatz fehlt das richtige Ergebnis.":"Im Antwortsatz fehlt die Einheit.";},
     loes:`W = ${w}${u?" "+u:""}. Antwort: „${muster}“`,ex};
+}
+
+/* ================= Level 3 · Prozentsatz ================= */
+/* 3-1: 0★ ganze Prozente · 1★ auch Kommazahlen · 2★ auch über 100 % */
+const P3=[[4,5,8,10,12,15,20,25,30,35,40,45,60,75,80],[12.5,2.5,7.5,17.5,37.5,0.5,1.5,22.5,13,17,23,64],[110,120,125,130,140,150,160,175,200,250,300]];
+const G3=[[20,40,50,60,80,120,150,160,200,250,320,360,400,450,500,750],[80,120,160,240,320,400,480,560,640,800,1200],[20,40,60,80,120,160,200,240,320,400,500]];
+const VERBRAUCHT=new Set(["200/50","50/10","300/15","80/60","240/36","800/100","2000/10","600/210","240/18","60/90","125/5","400/500","150/60","480/96"]);
+function ps3(lv){
+  for(let k=0;k<500;k++){let p,G;
+    if(lv===1&&rnd(0,2)===0){p=pick(P3[0]);G=pick(G3[1]);}
+    else if(lv===2&&rnd(0,1)){p=pick(P3[rnd(0,1)]);G=pick(G3[1]);}
+    else{p=pick(P3[lv]);G=pick(G3[lv]);}
+    const W=rund(G*p/100);if(Number.isInteger(W)&&W>0&&!VERBRAUCHT.has(G+"/"+W))return{p,G,W};}
+  return{p:20,G:350,W:70};}
+const glZeile3=(G,W)=>`${fr(G_(G),"100 %")} = ${fr(W_(W),"x")}`;
+const tr3=(G,W,p)=>`x = ${W} · 100 ÷ ${G} = ${dez(p)} → ${P_("p % = "+dez(p)+" %")}`;
+const glForm3=()=>`<div class="glw"><span class="glb"><span class="oben">${fx(0,"Zähler links")}</span><span>${fx(1,"Nenner links")} %</span></span><span class="gleich">=</span><span class="glb"><span class="oben">${fx(2,"Zähler rechts")}</span><span>${fx(3,"Nenner rechts","text")}</span></span></div>`;
+
+/* 3-1 p % berechnen: Aufgabe 1–3 Verhältnisgleichung aufstellen · 4–6 Taschenrechner-Zeile · 7–10 nur Ergebnis */
+function g3a(lv,i){
+  if(i==null)i=rnd(0,9);
+  const {p,G,W}=ps3(lv), auf=`${W} von ${G}`;
+  const ex=`Hinter „von“ steht ${G_("G = "+G)}, der Teil ist ${W_("W = "+W)}, gesucht ist ${P_("p % = x")}.<br>${glZeile3(G,W)} → ${tr3(G,W,p)}`;
+  if(i<3)return{q:`Stelle die Verhältnisgleichung auf: Wie viel Prozent sind <b>${auf}</b>?`,form:glForm3(),kat:G+"|"+W,
+    check:v=>[eqN(v[0],G),eqN(v[1],100),eqN(v[2],W),eqX(v[3])],
+    tipp:v=>eqN(v[0],W)&&eqN(v[2],G)?"G und W sind vertauscht. Das Ganze G steht hinter „von“.":!eqN(v[1],100)?"Unter G steht 100 %.":!eqX(v[3])?"Unten rechts steht das gesuchte x.":"",
+    loes:glZeile3(G,W),ex};
+  if(i<6)return{q:`Wie viel Prozent sind <b>${auf}</b>? Die Verhältnisgleichung steht schon da:<br>${glZeile3(G,W)}<br>Fülle die Taschenrechner-Zeile aus.`,
+    form:`<div class="glx">x = ${fx(0,"Zahl vor · 100")} · 100 ÷ ${fx(1,"Zahl nach ÷")} = ${fx(2,"Ergebnis x")}</div>`,kat:String(p),
+    check:v=>[eqN(v[0],W),eqN(v[1],G),eqN(v[2],p)],
+    tipp:v=>eqN(v[0],G)&&eqN(v[1],W)?"Vorne steht W: x = W · 100 ÷ G.":"",
+    loes:tr3(G,W,p),ex};
+  return Object.assign(num(`Rechne auf Papier mit der Verhältnisgleichung. Trage nur das Ergebnis ein.<br>Wie viel Prozent sind <b>${auf}</b>?`,p,"%",ex),{label:"p ="});
+}
+
+/* 3-2 Sachaufgaben (p % gesucht), Runde = 5: 0★ Anzahlen · 1★ mit Einheiten · 2★ W als Differenz */
+const PRODUKT=[["Ein Skateboard","es"],["Eine Spielkonsole","sie"],["Ein Paar Kopfhörer","es"],["Ein Fußball","er"],["Eine Sporttasche","sie"]];
+const SACH3=[
+ [{u:"",G:[20,25,50],lo:10,hi:80,t:(G,W)=>`In der Klasse 7c sind ${G} Schüler. ${W} von ihnen spielen ein Instrument. Wie viel Prozent der Schüler spielen ein Instrument?`,a:p=>`${p} % der Schüler spielen ein Instrument.`},
+  {u:"",G:[100,200,400,500],lo:5,hi:40,t:(G,W)=>`Bei einer Tombola gibt es ${G} Lose. ${W} davon sind Gewinne. Wie viel Prozent der Lose sind Gewinne?`,a:p=>`${p} % der Lose sind Gewinne.`},
+  {u:"",G:[20,25,40,50],lo:40,hi:95,t:(G,W)=>`Bei einem Test kann man ${G} Punkte erreichen. Mia hat ${W} Punkte. Wie viel Prozent der Punkte hat sie erreicht?`,a:p=>`Mia hat ${p} % der Punkte erreicht.`},
+  {u:"",G:[20,25,40,50],lo:5,hi:30,t:(G,W)=>`In einer Kiste sind ${G} Äpfel. ${W} davon sind faul. Wie viel Prozent der Äpfel sind faul?`,a:p=>`${p} % der Äpfel sind faul.`},
+  {u:"",G:[40,60,80,120,150,200],lo:10,hi:50,t:(G,W)=>`Beim Sportfest starten ${G} Schüler. ${W} von ihnen bekommen eine Urkunde. Wie viel Prozent der Schüler bekommen eine Urkunde?`,a:p=>`${p} % der Schüler bekommen eine Urkunde.`}],
+ [{u:"km",G:[8,12,16,20,24,40],lo:20,hi:80,t:(G,W)=>`Eine Wanderung ist ${G} km lang. Bis zur Pause hat die Klasse ${W} km geschafft. Wie viel Prozent der Strecke sind das?`,a:p=>`Die Klasse hat ${p} % der Strecke geschafft.`},
+  {u:"€",G:[20,25,40,50,80],lo:10,hi:50,t:(G,W)=>`Tom bekommt ${G} € Taschengeld im Monat. Er spart ${W} € davon. Wie viel Prozent seines Taschengeldes spart er?`,a:p=>`Tom spart ${p} % seines Taschengeldes.`},
+  {u:"g",G:[100,200,250,400],lo:20,hi:60,t:(G,W)=>`Eine Tafel Schokolade wiegt ${G} g. Davon sind ${W} g Zucker. Wie viel Prozent Zucker enthält die Schokolade?`,a:p=>`Die Schokolade enthält ${p} % Zucker.`},
+  {u:"ml",G:[200,250,400,500,750,1000],lo:5,hi:40,t:(G,W)=>`Eine Flasche enthält ${G} ml Saftschorle. Davon sind ${W} ml Fruchtsaft. Wie viel Prozent Fruchtsaft enthält die Saftschorle?`,a:p=>`Die Saftschorle enthält ${p} % Fruchtsaft.`},
+  {u:"€",G:[240,320,400,480,800],lo:10,hi:40,t:(G,W)=>`Ein Smartphone kostet ${G} €. Lea zahlt ${W} € an. Wie viel Prozent des Preises sind das?`,a:p=>`Lea zahlt ${p} % des Preises an.`}],
+ [{u:"€",art:"minus",G:[40,60,80,120,160,200,300,500],lo:5,hi:50,ex:["400/60","80/20","50/5","250/50"],t:(G,N)=>{const [x,y]=pick(PRODUKT);return `${x} kostete ${G} €. Im Sale kostet ${y} nur noch ${N} €. Um wie viel Prozent wurde der Preis gesenkt?`;},a:p=>`Der Preis wurde um ${p} % gesenkt.`},
+  {u:"€",art:"plus",G:[20,25,40,50,60,80],lo:5,hi:40,t:(G,N)=>`Eine Monatskarte für den Bus kostete ${G} €. Jetzt kostet sie ${N} €. Um wie viel Prozent wurde der Preis erhöht?`,a:p=>`Der Preis wurde um ${p} % erhöht.`},
+  {u:"",art:"minus",G:[200,250,300,400,500],lo:60,hi:95,t:(G,N)=>`Ein Bäcker backt ${G} Brezeln. Am Abend sind noch ${N} übrig. Wie viel Prozent der Brezeln wurden verkauft?`,a:p=>`${p} % der Brezeln wurden verkauft.`,wtxt:"verkauft"},
+  {u:"",art:"minus",G:[50,75,80,100,120,150],lo:80,hi:96,t:(G,N)=>`In der Jahrgangsstufe 7 sind ${G} Schüler. Heute fehlen ${N}. Wie viel Prozent der Schüler sind da?`,a:p=>`${p} % der Schüler sind da.`,wtxt:"da"},
+  {u:"kg",art:"plus",G:[4,5,8,10,20],lo:25,hi:100,ex:["40/2"],t:(G,N)=>`Ein Hundewelpe wog ${G} kg. Jetzt wiegt er ${N} kg. Um wie viel Prozent hat er zugenommen?`,a:p=>`Der Welpe hat um ${p} % zugenommen.`}]];
+EINHEITEN["%"]=["%","prozent"];
+function g3b(lv){
+  const s=pick(SACH3[lv]), u=s.u, mit=x=>x+(u?" "+u:"");
+  let G,W,p;
+  for(let k=0;k<500;k++){G=pick(s.G);W=rnd(Math.max(1,Math.ceil(G*s.lo/100)),Math.floor(G*s.hi/100));p=rund(W*100/G);
+    if(W>0&&W<(s.art==="plus"?10*G:G)&&Number.isInteger(p*(lv?2:1))&&!(s.ex||[]).includes(G+"/"+W))break;}
+  const N=s.art==="minus"?G-W:s.art==="plus"?G+W:null;
+  const antw=s.a(dez(p));
+  const diff=s.art==="minus"?`Zuerst den Prozentwert ausrechnen: ${W_("W = "+mit(G)+" − "+mit(N)+" = "+mit(W))}${s.wtxt?" ("+s.wtxt+")":""}.<br>`:
+             s.art==="plus"?`Zuerst den Prozentwert ausrechnen: ${W_("W = "+mit(N)+" − "+mit(G)+" = "+mit(W))}.<br>`:"";
+  const ex=`${diff}geg.: ${G_("G = "+mit(G))}, ${W_("W = "+mit(W))} · ges.: ${P_("p in %")}<br>${glZeile3(G,W)} → ${tr3(G,W,p)}<br>Antwort: „${antw}“`;
+  return{q:s.art?s.t(G,N):s.t(G,W),kat:String(p),
+    form:`<div class="glx"><span>p =</span>${fx(0,"Ergebnis")}<span class="einheit">%</span></div><label class="satzlab">Antwortsatz:${fx(1,"Antwortsatz","text").replace('class="fx"','class="fx satz"')}</label>`,
+    check:v=>[eqN(v[0],p),satzPruef(v[1],p,"%").ok],
+    tipp:(v,r)=>{if(!r[0]&&s.art)return"Hast du zuerst W als Differenz ausgerechnet?";if(r[1])return"";const c=satzPruef(v[1],p,"%");return !c.worte?"Schreibe einen ganzen Satz.":!c.hatZahl?"Im Antwortsatz fehlt das richtige Ergebnis.":"Im Antwortsatz fehlt das Prozentzeichen %.";},
+    loes:`p = ${dez(p)} %. Antwort: „${antw}“`,ex};
+}
+
+/* 3-3 Prozentsätze erkennen (ohne Rechnen): 0★ 1, 10, 50, 100 % · 1★ dazu 20, 25 % · 2★ dazu 2, 200, 300 % */
+const ANTEIL={1:[1,100],2:[1,50],10:[1,10],20:[1,5],25:[1,4],50:[1,2],100:[1],200:[2],300:[3]};
+const S33=[[1,10,50,100],[1,10,20,25,50,100],[1,2,10,20,25,50,100,200,300]];
+const G33={1:[200,400,500,600,700,800,900],2:[100,150,200,250,350,400,500],10:[20,40,50,70,80,90,120,150,200],20:[10,15,20,25,35,40,45,50,75,100],25:[8,12,16,20,24,28,36,40,44,100],50:[8,12,14,18,24,36,40,50,70,90,120],100:[12,15,25,35,48,75],200:[6,8,12,15,25,40,45],300:[4,5,7,8,10,20,30]};
+const VER33=["60/30","60/15","60/6","80/16","300/3"];
+const DINGE=[{w:"€",g:"€",m:1},{w:"km",g:"km",m:1},{w:"kg",g:"kg",m:1},{w:"m",g:"m",m:1},{w:"Minuten",g:"Minuten"},{w:"Kinder",g:"Kindern"},{w:"Bonbons",g:"Bonbons"},{w:"Seiten",g:"Seiten"}];
+const anteil=p=>p>=100?String(ANTEIL[p][0]):fr(ANTEIL[p][0],ANTEIL[p][1]);
+/* typische Fehler: Nenner als Prozentsatz (¼ → 4 %), Dezimalzahl als Prozent (¼ = 0,25 → 0,25 %), Nachbaranteile verwechselt, W als Prozentsatz */
+const FALLE33={1:["100 %","10 %","0,01 %"],2:["50 %","20 %","0,02 %","1 %"],10:["1 %","100 %","0,1 %"],20:["5 %","25 %","0,2 %","2 %"],25:["4 %","20 %","0,25 %","40 %"],
+  50:["2 %","5 %","0,5 %","25 %"],100:["1 %","10 %","200 %"],200:["2 %","20 %","50 %","100 %"],300:["3 %","30 %","33 %","200 %"]};
+const FALLEB={1:[fr(1,10),fr(10,100),fr(1,1000)],2:[fr(1,2),fr(1,20),fr(2,10)],10:[fr(1,100),fr(1,5),fr(1,20)],20:[fr(1,20),fr(1,4),fr(1,2)],25:[fr(1,25),fr(1,5),fr(2,5)],
+  50:[fr(1,50),fr(1,5),fr(1,4)],100:[fr(1,100),"10",fr(1,10)],200:[fr(1,2),"20",fr(1,200)],300:[fr(1,3),"30",fr(1,300)]};
+const fallen=(p,extra)=>{const f=FALLE33[p];return [f[0],...shuffle(f.slice(1).concat(extra||[]))];};
+function g3c(lv){
+  const set=S33[lv], p=pick(set), t=rnd(0,9);
+  if(t>=8)return mc(`Welcher Anteil entspricht ${p} %?`,"",anteil(p),[FALLEB[p][0],...shuffle(FALLEB[p].slice(1))],`${p} % = ${anteil(p)}`);
+  if(t===7)return mc(`${anteil(p)} entspricht wie viel Prozent?`,"",p+" %",fallen(p),`${anteil(p)} entspricht ${p} %.`);
+  let G,W;for(let k=0;k<200;k++){G=pick(G33[p]);W=G*p/100;if(!VER33.includes(G+"/"+W))break;}
+  const d=pick(DINGE.filter(x=>W>1||x.m)), Wt=`${W} ${d.w}`, Gt=`${G} ${d.g}`, a=anteil(p);
+  const schritt=p>=100?`${Wt} sind ${a} · ${Gt}.`:`${Wt} sind ${a} von ${Gt}.`;
+  return mc(`Wie viel Prozent sind <b>${Wt} von ${Gt}</b>?`,"",p+" %",fallen(p,W!==p?[W+" %"]:[]),
+    `${schritt} → ${a} entspricht ${p} %. → ${Wt} sind ${p} % von ${Gt}.`);
 }
 
 const BOSS={id:"m",name:"Endgegner",gen:lv=>{const t=pick(ALLE);return t.gen(Math.min(2,1+lv));}};
