@@ -188,8 +188,15 @@ const LEVELS=[
     {id:"3a",nr:"3-1",name:"p % berechnen",gen:g3a},
     {id:"3b",nr:"3-2",name:"Sachaufgaben",gen:g3b,runde:5},
     {id:"3c",nr:"3-3",name:"Prozentsätze erkennen",gen:g3c}]},
-  {nr:4,name:"Grundwert",spiele:null,info:"kommt bald"},
-  {nr:5,name:"Rabatte &amp; Co.",spiele:null,info:"kommt bald"}];
+  {nr:4,name:"Grundwert",spiele:[
+    {id:"4a",nr:"4-1",name:"G berechnen",gen:g4a},
+    {id:"4b",nr:"4-2",name:"Sachaufgaben",gen:g4b,runde:5},
+    {id:"4c",nr:"4-3",name:"Grundwert im Kopf",gen:g4c}]},
+  {nr:5,name:"Rabatte &amp; Co.",spiele:[
+    {id:"5a",nr:"5-1",name:"Rabatt, Skonto, MwSt.",gen:g5a,runde:5},
+    {id:"5b",nr:"5-2",name:"Diagramme zeichnen",gen:g5b},
+    {id:"5c",nr:"5-3",name:"Diagramme ablesen",gen:g5c},
+    {id:"5d",nr:"5-4",name:"Zinsen",gen:g5d,runde:5}]}];
 const ALLE=LEVELS.flatMap(l=>l.spiele||[]);
 const BONUS_PRO_MUENZE=5, HTML=true, STD_EINHEIT="";
 let S={stars:{},bonus:{},topf:0,muenzen:0,lehrer:false};
@@ -311,21 +318,22 @@ const eqN=(s,n)=>gleich(zahl(s),n);
 const eqX=s=>String(s).trim().toLowerCase()==="x";
 const fmt=(W,u)=>u==="€"&&nk(W)===1?W.toFixed(2).replace(".",","):dez(W);
 const glZeile=(G,p)=>`${fr(G_(G),"100 %")} = ${fr(W_("x"),P_(dez(p)+" %"))}`;
-const kreuz=(G,p,W)=>`x = ${G} · ${dez(p)} : 100 → x = ${dez(rund(G*p))} : 100 → x = ${dez(W)}`;
+const kreuz=(G,p,W)=>`x = ${G} · ${dez(p)} ÷ 100 = ${dez(W)}`;
 const fx=(k,lab,mode)=>`<input type="text" class="fx" data-k="${k}" inputmode="${mode||"decimal"}" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="${lab}">`;
-const glForm=()=>`<div class="glw"><span class="glb"><span class="oben">${fx(0,"Zähler links","text")}</span><span>100 %</span></span><span class="gleich">=</span><span class="glb"><span class="oben">${fx(1,"Zähler rechts","text")}</span><span>${fx(2,"Nenner rechts","text")} %</span></span></div>`;
+const glForm=()=>glForm4();
 
 /* 2-1 Verhältnisgleichung: Aufgabe 1–3 nur einsetzen · 4–6 einsetzen und ausrechnen · 7–10 auf Papier, nur Ergebnis */
 function g2a(lv,i){
   if(i==null)i=rnd(0,9);
   const {p,G,W}=pw(lv,lv?2:0), auf=`${dez(p)} % von ${G}`;
   const ex=`Hinter „von“ steht ${G_("G = "+G)}, ${P_("p % = "+dez(p)+" %")}, gesucht ist ${W_("W = x")}.<br>${glZeile(G,p)} → ${kreuz(G,p,W)}`;
-  const tipp=v=>eqN(v[0],p)&&eqN(v[2],G)?"G und p % sind vertauscht. Was ist das Ganze? Hinter „von“ steht G.":eqN(v[1],G)||eqN(v[1],p)?"Oben rechts steht die gesuchte Größe x.":"";
-  if(i<3)return{q:`Setze in die Verhältnisgleichung ein: <b>${auf}</b>`,form:glForm(),kat:G+"|"+p,
-    check:v=>[eqN(v[0],G),eqX(v[1]),eqN(v[2],p)],tipp,loes:glZeile(G,p),ex};
+  const muster=[[G,100,"x",p],["x",p,G,100]];
+  const tipp=v=>eqN(v[0],p)&&eqN(v[2],G)?"G und p % sind vertauscht. Was ist das Ganze? Hinter „von“ steht G.":!v.slice(0,4).some(eqX)?"Schreibe für die gesuchte Größe x.":!v.slice(0,4).some(t=>eqN(t,100))?"Das Ganze G entspricht 100 %.":"";
+  if(i<3)return{q:`Stelle die Verhältnisgleichung auf: <b>${auf}</b>`,form:glForm(),kat:G+"|"+p,
+    check:v=>glPruef(v,muster,W),tipp,loes:glZeile(G,p),ex};
   if(i<6)return{q:`Stelle die Verhältnisgleichung auf und rechne aus: <b>${auf}</b>`,
-    form:glForm()+`<div class="glx">x = ${fx(3,"Ergebnis x")}</div>`,kat:String(W),
-    check:v=>[eqN(v[0],G),eqX(v[1]),eqN(v[2],p),eqN(v[3],W)],tipp,loes:`${glZeile(G,p)} und x = ${dez(W)}`,ex};
+    form:glForm()+`<div class="glx">x = ${fx(4,"Ergebnis x")}</div>`,kat:String(W),
+    check:v=>[...glPruef(v,muster,W),eqN(v[4],W)],tipp,loes:`${glZeile(G,p)} und x = ${dez(W)}`,ex};
   return Object.assign(num(`Rechne auf Papier mit der Verhältnisgleichung. Trage nur das Ergebnis ein.<br><b>${auf}</b> = ?`,W,"",ex),{label:"W ="});
 }
 
@@ -402,8 +410,8 @@ function g3a(lv,i){
   const {p,G,W}=ps3(lv), auf=`${W} von ${G}`;
   const ex=`Hinter „von“ steht ${G_("G = "+G)}, der Teil ist ${W_("W = "+W)}, gesucht ist ${P_("p % = x")}.<br>${glZeile3(G,W)} → ${tr3(G,W,p)}`;
   if(i<3)return{q:`Stelle die Verhältnisgleichung auf: Wie viel Prozent sind <b>${auf}</b>?`,form:glForm3(),kat:G+"|"+W,
-    check:v=>[eqN(v[0],G),eqN(v[1],100),eqN(v[2],W),eqX(v[3])],
-    tipp:v=>eqN(v[0],W)&&eqN(v[2],G)?"G und W sind vertauscht. Das Ganze G steht hinter „von“.":!eqN(v[1],100)?"Unter G steht 100 %.":!eqX(v[3])?"Unten rechts steht das gesuchte x.":"",
+    check:v=>glPruef(v,[[G,100,W,"x"],[W,"x",G,100]],p),
+    tipp:v=>eqN(v[0],W)&&eqN(v[1],100)?"G und W sind vertauscht. Das Ganze G steht hinter „von“.":!v.some(t=>eqN(t,100))?"Das Ganze G entspricht 100 %.":!v.some(eqX)?"Schreibe für den gesuchten Prozentsatz x.":"",
     loes:glZeile3(G,W),ex};
   if(i<6)return{q:`Wie viel Prozent sind <b>${auf}</b>? Die Verhältnisgleichung steht schon da:<br>${glZeile3(G,W)}<br>Fülle die Taschenrechner-Zeile aus.`,
     form:`<div class="glx">x = ${fx(0,"Zahl vor · 100")} · 100 ÷ ${fx(1,"Zahl nach ÷")} = ${fx(2,"Ergebnis x")}</div>`,kat:String(p),
@@ -471,6 +479,411 @@ function g3c(lv){
   const schritt=p>=100?`${Wt} sind ${a} · ${Gt}.`:`${Wt} sind ${a} von ${Gt}.`;
   return mc(`Wie viel Prozent sind <b>${Wt} von ${Gt}</b>?`,"",p+" %",fallen(p,W!==p?[W+" %"]:[]),
     `${schritt} → ${a} entspricht ${p} %. → ${Wt} sind ${p} % von ${Gt}.`);
+}
+
+/* ================= Gemeinsame Hilfen (Verhältnisgleichung prüfen, Sachaufgaben) ================= */
+const cent=x=>Math.round(x*100)/100;
+const eur=x=>{x=cent(x);return Number.isInteger(x)?String(x):x.toFixed(2).replace(".",",");};
+const eqC=(s,n)=>eqN(s,cent(n));
+const glWert=s=>eqX(s)?"x":zahl(s);
+/* Jede richtig aufgestellte Verhältnisgleichung zählt: genau ein x, oben die Größen, unten die Prozentsätze, Kreuzprodukt stimmt.
+   muster = kanonische Formen (für die Markierung einzelner Felder), u = wahrer Wert von x */
+function glPruef(v,muster,u){
+  const w=v.slice(0,4).map(glWert), z=w.map(t=>t==="x"?u:t);
+  const ms=a=>a.map(t=>rund(t)).sort((p,q)=>p-q).join("|"), m0=muster[0].map(t=>t==="x"?u:t);
+  const ok=w.filter(t=>t==="x").length===1&&!z.some(t=>typeof t!=="number"||isNaN(t))&&
+    ms([z[0],z[2]])===ms([m0[0],m0[2]])&&ms([z[1],z[3]])===ms([m0[1],m0[3]])&&
+    Math.abs(z[0]*z[3]-z[1]*z[2])<=1e-6*Math.max(1,Math.abs(z[0]*z[3]));
+  if(ok)return[true,true,true,true];
+  const treffer=m=>m.map((t,k)=>t==="x"?w[k]==="x":(w[k]!=="x"&&gleich(w[k],t)));
+  return muster.map(treffer).sort((a,b)=>b.filter(Boolean).length-a.filter(Boolean).length)[0];
+}
+const glForm4=()=>`<div class="glw"><span class="glb"><span class="oben">${fx(0,"Zähler links","text")}</span><span>${fx(1,"Nenner links","text")} %</span></span><span class="gleich">=</span><span class="glb"><span class="oben">${fx(2,"Zähler rechts","text")}</span><span>${fx(3,"Nenner rechts","text")} %</span></span></div>`;
+const ergF=(k,lab,u)=>`<div class="glx"><span>${lab}</span>${fx(k,lab)}${u?`<span class="einheit">${u}</span>`:""}</div>`;
+const satzF=k=>`<label class="satzlab">Antwortsatz:${fx(k,"Antwortsatz","text").replace('class="fx"','class="fx satz"')}</label>`;
+function satzTipp(s,W,u){const c=satzPruef(s,W,u);return c.ok?"":!c.worte?"Schreibe einen ganzen Satz.":!c.hatZahl?"Im Antwortsatz fehlt das richtige Ergebnis.":u==="%"?"Im Antwortsatz fehlt das Prozentzeichen %.":"Im Antwortsatz fehlt die Einheit.";}
+const nennt=(s,wort,buch)=>new RegExp(`${wort}\\s*${buch}(?![a-zäöüß])`,"i").test(String(s));
+
+
+/* ================= Level 4 · Grundwert ================= */
+/* 4-1: 0★ glatte Prozentsätze · 1★ Taschenrechner-Zahlen · 2★ Kommazahlen und über 100 % */
+const P4=[[5,10,20,25,40,50,4,8,30,60,75],[3,6,12,14,15,16,35,45,65,85],[2.5,7.5,12.5,0.5,1.5,110,120,125,150,200]];
+const G4=[[40,60,80,120,150,200,240,300,400,450,500,600,800],[150,250,350,450,480,600,650,700,900,1200],[60,80,120,160,240,400,480,800,1200,2000]];
+const VERBRAUCHT4=new Set(["36/15","60/40","96/20","45/10","4/5","15/25","30/20","30/12","210/35","52/8","18/7.5","100/12.5","10/0.5","90/150","600/125"]);
+function gw4(lv){
+  for(let k=0;k<500;k++){const p=pick(P4[lv]),G=pick(G4[lv]),W=rund(G*p/100);
+    if(W>0&&nk(W)<=(lv?1:0)&&!VERBRAUCHT4.has(dez(W).replace(",",".")+"/"+p))return{p,G,W};}
+  return{p:20,G:350,W:70};}
+const glZeile4=(W,p)=>`${fr(G_("x"),"100 %")} = ${fr(W_(dez(W)),P_(dez(p)+" %"))}`;
+const tr4=(W,p,G)=>`x = ${dez(W)} · 100 ÷ ${dez(p)} = ${dez(G)} → ${G_("G = "+dez(G))}`;
+
+/* 4-1 G berechnen: Aufgabe 1–3 Verhältnisgleichung aufstellen · 4–6 Rechenzeile · 7–10 nur Ergebnis */
+function g4a(lv,i){
+  if(i==null)i=rnd(0,9);
+  const {p,G,W}=gw4(lv), auf=`${dez(W)} sind ${dez(p)} % von G`;
+  const ex=`Gegeben sind ${W_("W = "+dez(W))} und ${P_("p % = "+dez(p)+" %")}. Gesucht ist das Ganze ${G_("G = x")} (≙ 100 %).<br>${glZeile4(W,p)} → ${tr4(W,p,G)}`;
+  if(i<3)return{q:`Stelle die Verhältnisgleichung auf: <b>${auf}</b>. Wie groß ist G?`,form:glForm4(),kat:W+"|"+p,
+    check:v=>glPruef(v,[["x",100,W,p],[W,p,"x",100]],G),
+    tipp:v=>eqN(v[0],W)&&eqN(v[3],100)?"Gesucht ist das Ganze G. Dort steht x.":!v.slice(0,4).some(eqX)?"Schreibe für den gesuchten Grundwert x.":!v.slice(0,4).some(t=>eqN(t,100))?"Das Ganze G entspricht 100 %.":"",
+    loes:glZeile4(W,p),ex};
+  if(i<6)return{q:`<b>${auf}</b>. Die Verhältnisgleichung steht schon da:<br>${glZeile4(W,p)}<br>Fülle die Rechenzeile aus.`,
+    form:`<div class="glx">x = ${fx(0,"erste Zahl")} · 100 ÷ ${fx(1,"Zahl nach ÷")} = ${fx(2,"Ergebnis x")}</div>`,kat:String(G),
+    check:v=>[eqN(v[0],W),eqN(v[1],p),eqN(v[2],G)],
+    tipp:v=>eqN(v[0],p)&&eqN(v[1],W)?"Vorne steht W: x = W · 100 ÷ p.":eqN(v[2],W*p/100)?"Das ist p % von W. Gesucht ist aber das Ganze G.":"",
+    loes:tr4(W,p,G),ex};
+  return Object.assign(num(`Rechne auf Papier mit der Verhältnisgleichung. Trage nur das Ergebnis ein.<br><b>${auf}</b>. G = ?`,G,"",ex),
+    {label:"G =",tipp:v=>gleich(v,rund(W*p/100))?"Das ist p % von W. Gesucht ist aber das Ganze G – es muss "+(p<100?"größer":"kleiner")+" als W sein.":""});
+}
+
+/* 4-2 Sachaufgaben (G gesucht), Runde = 5: 0★ Anzahlen, glatte % · 1★ Einheiten, TR-Zahlen · 2★ verminderter/vermehrter Grundwert */
+const SACH4=[
+ [{u:"",G:[20,25,30,40],ps:[10,20,25,40,50],t:(W,p)=>`${W} Schüler fahren mit dem Bus. Das sind ${p} % der Klasse. Wie viele Schüler hat die Klasse?`,a:G=>`Die Klasse hat ${G} Schüler.`},
+  {u:"",G:[100,200,300,400,500],ps:[5,10,20,25],t:(W,p)=>`Bei einer Tombola gibt es ${W} Gewinnlose. Das sind ${p} % aller Lose. Wie viele Lose gibt es?`,a:G=>`Es gibt ${G} Lose.`},
+  {u:"",G:[80,120,160,200,240],ps:[25,50,75,40,60],t:(W,p)=>`Im Kino sind ${W} Plätze besetzt. Das sind ${p} % aller Plätze. Wie viele Plätze hat das Kino?`,a:G=>`Das Kino hat ${G} Plätze.`},
+  {u:"",G:[200,300,400,500,600,800],ps:[5,10,20,25],t:(W,p)=>`Mia hat diese Woche ${W} neue Follower bekommen. Das sind ${p} % ihrer bisherigen Follower. Wie viele Follower hatte sie vorher?`,a:G=>`Mia hatte vorher ${G} Follower.`},
+  {u:"",G:[40,60,80,120,200],ps:[10,20,25,50],t:(W,p)=>`Beim Sportfest bekommen ${W} Schüler eine Urkunde. Das sind ${p} % aller Teilnehmer. Wie viele Schüler haben teilgenommen?`,a:G=>`Es haben ${G} Schüler teilgenommen.`}],
+ [{u:"€",G:[240,300,400,480,500,600,800],ps:[12,15,18,8,6],t:(W,p)=>`Lea zahlt für ihr neues Smartphone ${W} € an. Das sind ${p} % des Preises. Wie viel kostet das Smartphone?`,a:G=>`Das Smartphone kostet ${G} €.`},
+  {u:"km",G:[10,12,15,18,20,24,30],ps:[15,35,45,65,85],t:(W,p)=>`Bis zur Pause ist die Klasse ${W} km gewandert. Das sind ${p} % der ganzen Strecke. Wie lang ist die Wanderung?`,a:G=>`Die Wanderung ist ${G} km lang.`},
+  {u:"g",G:[100,150,200,250,400],ps:[12,35,45,8,16],t:(W,p)=>`Eine Packung Müsli enthält ${W} g Zucker. Das sind ${p} % des Inhalts. Wie schwer ist der Inhalt der Packung?`,a:G=>`Der Inhalt wiegt ${G} g.`},
+  {u:"€",G:[20,25,30,40,50,60],ps:[15,35,45,12,6],t:(W,p)=>`Tom spart jeden Monat ${W} € von seinem Taschengeld. Das sind ${p} % davon. Wie viel Taschengeld bekommt er?`,a:G=>`Tom bekommt ${G} € Taschengeld.`},
+  {u:"GB",G:[40,60,80,120,150],ps:[15,35,45,65,85],t:(W,p)=>`Ein Spiel hat schon ${W} GB geladen. Das sind ${p} % des ganzen Spiels. Wie groß ist das Spiel?`,a:G=>`Das Spiel ist ${G} GB groß.`}]];
+const VERM=[["Ein Hoodie","er"],["Eine Gaming-Maus","sie"],["Ein Controller","er"],["Eine Jeans","sie"],["Ein Skateboard","es"],["Ein Rucksack","er"],["Eine Sportjacke","sie"]];
+const VERH=[["die Monatskarte für den Bus","sie"],["das Streaming-Abo","es"],["die Kinokarte","sie"],["der Eintritt ins Freibad","er"]];
+EINHEITEN["GB"]=["gb","gigabyte"];
+function g4b(lv){
+  if(lv<2||rnd(0,4)===0){const s=pick(SACH4[Math.min(lv,1)]),u=s.u;let G,p,W;
+    for(let k=0;k<500;k++){G=pick(s.G);p=pick(s.ps);W=rund(G*p/100);if(W>0&&nk(W)<=(u?2:0)&&(u||Number.isInteger(W)))break;}
+    const w=fmt(W,u),muster=s.a(dez(G));
+    return{q:s.t(w,dez(p)),kat:String(G),form:ergF(0,"G =",u)+satzF(1),
+      check:v=>[eqN(v[0],G),satzPruef(v[1],G,u).ok],
+      tipp:(v,r)=>eqN(v[0],W*p/100)?"Gesucht ist das Ganze G. Es muss größer sein als "+w+(u?" "+u:"")+".":r[0]?satzTipp(v[1],G,u):"",
+      loes:`G = ${dez(G)}${u?" "+u:""}. Antwort: „${muster}“`,
+      ex:`geg.: ${W_("W = "+w+(u?" "+u:""))}, ${P_("p % = "+dez(p)+" %")} · ges.: ${G_("G")}<br>${glZeile4(W,p)} → ${tr4(W,p,G)}<br>Antwort: „${muster}“`};}
+  /* verminderter oder vermehrter Grundwert */
+  const art=pick(["minus","minus","plus","follower"]);let G,r,N;
+  for(let k=0;k<500;k++){
+    if(art==="minus"){G=pick([40,60,80,90,120,150,200]);r=pick([10,15,20,25,30,40]);}
+    else if(art==="plus"){G=pick([8,9,10,12,15,20,40,50]);r=pick([5,10,20,25]);}
+    else{G=pick([200,400,500,800,1000]);r=pick([5,10,15,20,25]);}
+    N=rund(G*(art==="minus"?100-r:100+r)/100);if(nk(N)<=(art==="follower"?0:2))break;}
+  const q=art==="minus"?100-r:100+r,u=art==="follower"?"":"€",Nt=u?eur(N):dez(N);
+  let text,muster;
+  if(art==="minus"){const [d,pr]=pick(VERM);text=`Nach ${r} % Rabatt kostet ${klein(d)} nur noch ${Nt} €. Wie viel kostete ${pr==="er"?"er":pr} vorher?`;muster=`${pr.charAt(0).toUpperCase()+pr.slice(1)} kostete vorher ${eur(G)} €.`;}
+  else if(art==="plus"){const [d,pr]=pick(VERH);text=`Nach einer Preiserhöhung um ${r} % kostet ${d} ${Nt} €. Wie viel kostete ${pr} vorher?`;muster=`${pr.charAt(0).toUpperCase()+pr.slice(1)} kostete vorher ${eur(G)} €.`;}
+  else{text=`Nach einem Zuwachs um ${r} % hat dein Kanal jetzt ${Nt} Follower. Wie viele Follower hatte er vorher?`;muster=`Der Kanal hatte vorher ${G} Follower.`;}
+  const falsch=rund(art==="minus"?N+N*r/100:N-N*r/100);
+  return{q:text,kat:String(G),form:ergF(0,"G =",u)+satzF(1),
+    check:v=>[eqN(v[0],G),satzPruef(v[1],G,u).ok],
+    tipp:(v,rr)=>eqN(v[0],falsch)?`Achtung: ${Nt}${u?" "+u:""} sind nicht 100 %, sondern ${q} %.`:eqN(v[0],N*q/100)?`${Nt}${u?" "+u:""} sind ${q} %. Gesucht ist das Ganze (100 %).`:rr[0]?satzTipp(v[1],G,u):"",
+    loes:`G = ${u?eur(G)+" €":G}. Antwort: „${muster}“`,
+    ex:`${art==="minus"?`Neuer Preis ≙ 100 % − ${r} % = ${q} %`:`Jetzt ≙ 100 % + ${r} % = ${q} %`}, also ${W_(Nt+(u?" "+u:"")+" ≙ "+q+" %")}. Gesucht ist ${G_("G ≙ 100 %")}.<br>${fr(G_("x"),"100 %")} = ${fr(W_(Nt),q+" %")} → x = ${Nt} · 100 ÷ ${q} = ${dez(G)} → ${G_("G = "+(u?eur(G)+" €":G))}<br>Falle: ${r} % von ${Nt}${u?" "+u:""} ${art==="minus"?"dazurechnen":"abziehen"} ist falsch, weil ${Nt}${u?" "+u:""} nicht 100 % sind.`};
+}
+
+/* 4-3 Grundwert im Kopf: 0★ 50, 10, 1 % · 1★ dazu 20, 25 % · 2★ dazu 75, 200 % */
+const S43=[[50,10,1],[50,10,1,20,25],[25,20,75,200,10,50,1]];
+const G43={1:[100,200,300,500,700,900,1200],10:[30,40,60,70,90,120,150,250],20:[15,20,25,35,40,45,60,80],25:[12,16,20,24,28,36,40,60],50:[14,18,24,30,36,48,70,90],75:[8,12,16,20,24,40],200:[6,8,12,15,25,40]};
+const FAKT={1:"· 100",10:"· 10",20:"· 5",25:"· 4",50:"· 2",100:"· 1",75:"÷ 3 · 4",200:"÷ 2"};
+const VER43=new Set(["30/50","15/25","6/10","16/20","3/1","45/75","120/200","24/10","7/50","5/1","30/20"]);
+function g4c(lv){
+  const p=pick(S43[lv]);let G,W;
+  for(let k=0;k<200;k++){G=pick(G43[p]);W=G*p/100;if(Number.isInteger(W)&&!VER43.has(W+"/"+p))break;}
+  const d=pick(DINGE.filter(x=>W>1||x.m)),einh=d.w;
+  const ex=p===75?`75 % = ${fr(3,4)}. Erst 25 %: ${W} ${einh} ÷ 3 = ${W/3} ${einh}. Dann 100 %: ${W/3} · 4 = ${G} ${einh}.`:
+    p===200?`200 % sind das Doppelte von G. Also ist G die Hälfte von W: ${W} ÷ 2 = ${G} ${einh}.`:
+    `${p} % = ${anteil(p)}. Also ist G ${100/p}-mal so groß wie W: G = ${W} ${einh} ${FAKT[p]} = ${G} ${einh}.`;
+  if(lv>=1&&rnd(0,3)===0)return Object.assign(mc(`W ist ${p} % von G. Wie bekommst du G?`,"","G = W "+FAKT[p],shuffle(Object.values(FAKT).filter(f=>f!==FAKT[p]).map(f=>"G = W "+f)),
+    p===75?"75 % = "+fr(3,4)+": erst ÷ 3 (das sind 25 %), dann · 4.":p===200?"200 % sind das Doppelte von G, also G = W ÷ 2.":`${p} % = ${anteil(p)}, also ist G ${100/p}-mal so groß wie W.`),{kat:FAKT[p]});
+  return Object.assign(num(`<b>${W} ${einh}</b> sind <b>${p} %</b> von G. Rechne im Kopf: Wie groß ist G?`,G,einh,ex),
+    {label:"G =",kat:String(G),tipp:v=>p<100&&gleich(v,W*p/100)?"G ist das Ganze und größer als W: multipliziere, statt zu dividieren.":p===200&&gleich(v,W*2)?"Bei 200 % ist W doppelt so groß wie G. G ist also kleiner als W.":""});
+}
+
+/* ================= Level 5 · Rabatte & Co. ================= */
+/* 5-1 Rabatt, Skonto, MwSt. (Sachaufgaben, Runde = 5)
+   0★ Rabatt mit 50 %, 10 %, 25 % (im Kopf), dann 20 %, 30 %
+   1★ Rabatt mit Taschenrechner-Prozenten, Skonto, MwSt. netto → brutto (19 % und 7 %)
+   2★ MwSt. aus dem Bruttopreis (mit Verhältnisgleichung), Angebote vergleichen */
+const WARE=[["Ein Hoodie","er"],["Eine Gaming-Maus","sie"],["Ein Controller","er"],["Eine Smartwatch","sie"],["Ein Skateboard","es"],
+  ["Ein Fußballtrikot","es"],["Eine Bluetooth-Box","sie"],["Ein Rucksack","er"],["Ein Gaming-Headset","es"],["Eine Jeans","sie"],["Ein Longboard","es"],["Eine Sportjacke","sie"]];
+const TECHNIK=[["Eine Spielkonsole","sie"],["Ein Gaming-Headset","es"],["Ein Tablet","es"],["Ein E-Scooter","er"],["Ein Fahrradhelm","er"],["Eine Smartwatch","sie"]];
+const ERMAESSIGT=[["Ein Manga-Band","er","Bücher"],["Ein Buch für den Urlaub","es","Bücher"],["Der Einkauf für die Klassenparty (Chips, Obst, Saft)","er","Lebensmittel"],["Ein Comic-Sammelband","er","Bücher"]];
+const SKONTO=["die Reparatur deines Fahrrads","die Reparatur deines Handydisplays","deine Online-Bestellung (Sportschuhe)","den neuen Akku für dein E-Bike","deinen Platz im Fußballcamp"];
+const klein=s=>s.charAt(0).toLowerCase()+s.slice(1);
+
+function rabattAufgabe(lv,i){
+  const [ding,pr]=pick(WARE);let p,G;
+  if(lv===0){p=i<3?pick([50,10,25]):pick([20,30,10,25,50]);G=pick(p===10?[30,50,70,90,120,150,250]:[20,40,60,80,120,160,200]);}
+  else{p=pick([15,35,12,40,30,45,8,18]);G=pick([24,36,48,59,79,89,119,149,65,85]);}
+  const R=cent(G*p/100),N=cent(G-R);
+  const muster=`${pr.charAt(0).toUpperCase()+pr.slice(1)} kostet jetzt ${eur(N)} €.`;
+  return{q:`${ding} kostet ${G} €. Im Sale gibt es ${p} % Rabatt. Wie viel Euro Rabatt bekommst du, und wie viel kostet ${pr} jetzt?`,kat:String(N),
+    form:ergF(0,"Rabatt =","€")+ergF(1,"neuer Preis =","€")+satzF(2),
+    check:v=>[eqC(v[0],R),eqC(v[1],N),satzPruef(v[2],N,"€").ok],
+    tipp:(v,r)=>eqC(v[1],R)?"Der neue Preis ist alter Preis − Rabatt.":eqC(v[0],N)?"Der Rabatt ist der Betrag, den du sparst.":(!r[0]||!r[1])?"":satzTipp(v[2],N,"€"),
+    loes:`Rabatt = ${eur(R)} €, neuer Preis = ${eur(N)} €. Antwort: „${muster}“`,
+    ex:`alter Preis ${G_("G = "+G+" €")}, ${P_("p % = "+p+" %")}, Rabatt ${W_("W = x")}<br>${glZeile(G,p)} → x = ${G} · ${p} ÷ 100 = ${eur(R)} → Rabatt ${eur(R)} €<br>neuer Preis: ${G} € − ${eur(R)} € = ${eur(N)} €<br>★ Kurzweg: 100 % − ${p} % = ${100-p} % → x = ${G} · ${100-p} ÷ 100 = ${eur(N)} €`};
+}
+function skontoAufgabe(){
+  const p=pick([2,3]),G=pick([150,250,80,120,340,95,460,180]),t=pick([7,10,14]),S=cent(G*p/100),N=cent(G-S),muster=`Ich muss ${eur(N)} € zahlen.`;
+  return{q:`Die Rechnung für ${pick(SKONTO)} beträgt ${G} €. Bei Zahlung innerhalb von ${t} Tagen gibt es ${p} % Skonto. Wie viel Euro Skonto bekommst du, und wie viel musst du dann zahlen?`,kat:String(N),
+    form:ergF(0,"Skonto =","€")+ergF(1,"Zahlbetrag =","€")+satzF(2),
+    check:v=>[eqC(v[0],S),eqC(v[1],N),satzPruef(v[2],N,"€").ok],
+    tipp:(v,r)=>eqC(v[1],S)?"Der Zahlbetrag ist Rechnung − Skonto.":(!r[0]||!r[1])?"":satzTipp(v[2],N,"€"),
+    loes:`Skonto = ${eur(S)} €, Zahlbetrag = ${eur(N)} €. Antwort: „${muster}“`,
+    ex:`Rechnung ${G_("G = "+G+" €")}, ${P_("p % = "+p+" %")}, Skonto ${W_("W = x")}<br>${glZeile(G,p)} → x = ${G} · ${p} ÷ 100 = ${eur(S)} → Skonto ${eur(S)} €<br>Zahlbetrag: ${G} € − ${eur(S)} € = ${eur(N)} €<br>★ Kurzweg: 100 % − ${p} % = ${100-p} % → x = ${G} · ${100-p} ÷ 100 = ${eur(N)} €`};
+}
+function nettoAufgabe(sieben){
+  const [ding,pr,art]=sieben?pick(ERMAESSIGT):pick(TECHNIK),p=sieben?7:19;
+  const G=sieben?pick([10,20,15,30,12,40,25]):pick([250,180,320,90,140,400,60,220]),M=cent(G*p/100),B=cent(G+M),muster=`An der Kasse zahlt man ${eur(B)} €.`;
+  return{q:`${ding} kostet netto (ohne MwSt.) ${G} €. ${sieben?`Für ${art} gilt der ermäßigte Steuersatz von 7 %.`:"Dazu kommen 19 % Mehrwertsteuer."} Wie viel Euro MwSt. sind das, und wie viel kostet ${pr} an der Kasse?`,kat:String(B),
+    form:ergF(0,"MwSt. =","€")+ergF(1,"Bruttopreis =","€")+satzF(2),
+    check:v=>[eqC(v[0],M),eqC(v[1],B),satzPruef(v[2],B,"€").ok],
+    tipp:(v,r)=>eqC(v[1],M)?"An der Kasse zahlst du Nettopreis + MwSt.":(!r[0]||!r[1])?"":satzTipp(v[2],B,"€"),
+    loes:`MwSt. = ${eur(M)} €, Bruttopreis = ${eur(B)} €. Antwort: „${muster}“`,
+    ex:`Nettopreis ${G_("G = "+G+" €")} ≙ 100 %, ${P_("p % = "+p+" %")}, MwSt. ${W_("W = x")}<br>${glZeile(G,p)} → x = ${G} · ${p} ÷ 100 = ${eur(M)} → MwSt. ${eur(M)} €<br>Bruttopreis: ${G} € + ${eur(M)} € = ${eur(B)} €<br>★ Kurzweg: 100 % + ${p} % = ${100+p} % → x = ${G} · ${100+p} ÷ 100 = ${eur(B)} €`};
+}
+function bruttoAufgabe(sieben){
+  const p=sieben?7:19,h=100+p;
+  const [ding]=sieben?pick(ERMAESSIGT):pick([["Ein Smartphone"],["Eine Spielkonsole"],["Ein Tablet"],["Ein E-Scooter"],["Eine Smartwatch"],["Ein Gaming-Headset"]]);
+  const B=sieben?pick([10.7,21.4,32.1,53.5,15,25]):pick([119,238,357,476,595,499,299,799,149,89]);
+  const exakt=B*p/h,M=cent(exakt),falsch=cent(B*p/100),muster=`Der Staat bekommt ${eur(M)} € Mehrwertsteuer.`;
+  const glatt=gleich(rund(exakt),M);
+  return{q:`${ding} kostet an der Kasse ${eur(B)} €. Wie viel Euro davon bekommt der Staat als Mehrwertsteuer (${p} %)? Stelle die Verhältnisgleichung auf. Runde auf Cent.`,kat:String(M),
+    form:glForm4()+ergF(4,"MwSt. =","€")+satzF(5),
+    check:v=>[...glPruef(v,[[B,h,"x",p],["x",p,B,h]],exakt),eqC(v[4],M),satzPruef(v[5],M,"€").ok],
+    tipp:(v,r)=>v.slice(0,4).some(t=>eqN(t,100))?`Der Preis an der Kasse ist der Bruttopreis. Er entspricht nicht 100 %, sondern ${h} %.`:
+      eqC(v[4],falsch)?`Achtung: ${p} % von ${eur(B)} € ist falsch, weil ${eur(B)} € schon ${h} % sind.`:!v.slice(0,4).some(eqX)?"Schreibe für die gesuchte MwSt. x.":
+      r.slice(0,5).every(Boolean)?satzTipp(v[5],M,"€"):"",
+    loes:`${fr(eur(B),h+" %")} = ${fr("x",p+" %")} und MwSt. = ${eur(M)} €. Antwort: „${muster}“`,
+    ex:`Bruttopreis ${eur(B)} € ≙ ${h} %, MwSt. ≙ ${p} %.<br>${fr(eur(B),h+" %")} = ${fr("x",p+" %")} → x = ${eur(B)} · ${p} ÷ ${h} ${glatt?"=":"≈"} ${eur(M)} → MwSt. ${eur(M)} €, netto ${eur(B-M)} €<br>Falle: ${p} % von ${eur(B)} € = ${eur(falsch)} € ist falsch, weil ${eur(B)} € schon ${h} % sind.`};
+}
+function vergleichAufgabe(){
+  const [ding,pr]=pick(WARE);
+  for(let k=0;k<300;k++){
+    const PA=pick([60,80,90,100,120,150]),pa=pick([10,15,20,25]);
+    const mitSkonto=rnd(0,1)===1, PB=PA+pick([-10,-5,5,10]), pb=mitSkonto?pick([2,3]):pick([20,25,30,35]);
+    const NA=cent(PA*(100-pa)/100),NB=cent(PB*(100-pb)/100);
+    if(PB<=0||Math.abs(NA-NB)<1||PA===PB&&pa===pb)continue;
+    const bA=NA<NB, L=bA?"A":"B", N=bA?NA:NB, D=cent(Math.abs(NA-NB)), muster=`Shop ${L} ist günstiger, dort kostet ${pr} nur ${eur(N)} €.`;
+    const akk=pr==="er"?ding.replace(/^Ein /,"einen "):klein(ding);
+    const txtB=mitSkonto?`Shop B verkauft ${pr==="er"?"ihn":pr} für ${PB} € und gibt ${pb} % Skonto, wenn du sofort bezahlst.`:`Shop B verkauft ${pr==="er"?"ihn":pr} für ${PB} € mit ${pb} % Rabatt.`;
+    return{q:`Du willst ${akk} kaufen. Shop A verkauft ${pr==="er"?"ihn":pr} für ${PA} € mit ${pa} % Rabatt. ${txtB} Wo ist es günstiger?`,kat:L+N,
+      form:ergF(0,"Preis in Shop A =","€")+ergF(1,"Preis in Shop B =","€")+satzF(2),
+      check:v=>[eqC(v[0],NA),eqC(v[1],NB),satzPruef(v[2],N,"€").ok&&nennt(v[2],"shop",L)],
+      tipp:(v,r)=>(eqC(v[0],cent(PA*pa/100))||eqC(v[1],cent(PB*pb/100)))?"Gesucht ist der Preis, den du am Ende zahlst, nicht der Rabatt.":(!r[0]||!r[1])?"":
+        !nennt(v[2],"shop",L)?"Schreibe im Antwortsatz, welcher Shop günstiger ist (Shop A oder Shop B).":satzTipp(v[2],N,"€"),
+      loes:`Shop A: ${eur(NA)} €, Shop B: ${eur(NB)} €. Antwort: „${muster}“`,
+      ex:`Shop A: 100 % − ${pa} % = ${100-pa} % → x = ${PA} · ${100-pa} ÷ 100 = ${eur(NA)} €<br>Shop B: 100 % − ${pb} % = ${100-pb} % → x = ${PB} · ${100-pb} ÷ 100 = ${eur(NB)} €<br>Shop ${L} ist um ${eur(D)} € günstiger.`};
+  }
+  return rabattAufgabe(1,0);
+}
+function g5a(lv,i){
+  if(i==null)i=rnd(0,4);
+  if(lv===0)return rabattAufgabe(0,i);
+  if(lv===1)return i<2?rabattAufgabe(1,i):i===2?skontoAufgabe():nettoAufgabe(i===4);
+  return i<2?bruttoAufgabe(false):i===2?bruttoAufgabe(true):vergleichAufgabe();
+}
+
+/* ---------- Diagramme zeichnen ---------- */
+const FARB=["#4C9BE8","#F28C52","#5DBB63","#F4C542","#A77BD8","#4DC3C9"];
+const UMFR=[
+ {t:"Speicher auf deinem Handy",k:["Fotos","Videos","Apps","frei"]},
+ {t:"Handy-Zeit pro Tag",k:["Chat","Musik","Spiele","Sonstiges"]},
+ {t:"Wie kommst du zur Schule?",k:["Bus","Fahrrad","zu Fuß","Auto"]},
+ {t:"Lieblings-Streamingdienst",k:["Netflix","YouTube","Disney+","Sonstige"]},
+ {t:"Lieblingssport der Klasse 7",k:["Fußball","Volleyball","Schwimmen","Tanzen"]},
+ {t:"Lieblingsessen in der Mensa",k:["Pizza","Nudeln","Burger","Salat"]},
+ {t:"Wofür gibst du dein Taschengeld aus?",k:["Essen","Kleidung","Spiele","Sparen"]}];
+const tit=u=>u.t.endsWith("?")?`Umfrage „${u.t}“`:u.t;
+const polar=(cx,cy,r,d)=>{const a=(d-90)*Math.PI/180;return[cx+r*Math.cos(a),cy+r*Math.sin(a)];};
+const f1=x=>x.toFixed(1);
+function sektor(cx,cy,r,a0,a1,farbe){
+  if(a1-a0>=359.99)return `<circle cx="${cx}" cy="${cy}" r="${r}" fill="${farbe}" stroke="#222" stroke-width="2"/>`;
+  const [x0,y0]=polar(cx,cy,r,a0),[x1,y1]=polar(cx,cy,r,a1);
+  return `<path d="M${cx} ${cy}L${f1(x0)} ${f1(y0)}A${r} ${r} 0 ${a1-a0>180?1:0} 1 ${f1(x1)} ${f1(y1)}Z" fill="${farbe}" stroke="#222" stroke-width="2" stroke-linejoin="round"/>`;}
+function bogen(cx,cy,a0,a1,txt){ /* Winkelbogen mit der Gradzahl darin */
+  const r=64,[x0,y0]=polar(cx,cy,r,a0),[x1,y1]=polar(cx,cy,r,a1),[tx,ty]=polar(cx,cy,40,(a0+a1)/2);
+  const pfad=a1-a0>=359.99?`<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="#111" stroke-width="2"/>`:
+    `<path d="M${f1(x0)} ${f1(y0)}A${r} ${r} 0 ${a1-a0>180?1:0} 1 ${f1(x1)} ${f1(y1)}" fill="none" stroke="#111" stroke-width="2"/>`;
+  return pfad+`<text x="${f1(tx)}" y="${f1(ty)}" font-size="15" font-weight="700" text-anchor="middle" dominant-baseline="middle" fill="#111" stroke="#fff" stroke-width="4" paint-order="stroke">${txt}</text>`;}
+function legende(x,y,eintr){return eintr.map((e,k)=>`<rect x="${x}" y="${y+k*34}" width="22" height="22" rx="4" fill="${e.f}" stroke="#222" stroke-width="1.5"/><text x="${x+32}" y="${y+k*34+16}" font-size="17" fill="#111">${e.t}</text>`).join("");}
+/* sek: [{name, deg, leg (Text in der Legende), grad (Gradzahl zeigen)}] */
+function kreisDia(sek){
+  let s=`<svg viewBox="0 0 480 300" role="img" aria-label="Kreisdiagramm">`,a=0;
+  sek.forEach((t,k)=>{s+=sektor(150,150,125,a,a+t.deg,FARB[k]);a+=t.deg;});
+  a=0;sek.forEach(t=>{if(t.grad)s+=bogen(150,150,a,a+t.deg,dez(t.deg)+"°");a+=t.deg;});
+  return s+legende(305,60,sek.map((t,k)=>({f:FARB[k],t:t.leg||t.name})))+`</svg>`;}
+function skala(y){let s=`<line x1="30" y1="${y}" x2="430" y2="${y}" stroke="#111" stroke-width="1.5"/>`;
+  for(let k=0;k<=20;k++){const x=30+k*20,g=k%2===0;s+=`<line x1="${x}" y1="${y}" x2="${x}" y2="${y+(g?10:5)}" stroke="#111" stroke-width="1.5"/>`;if(g)s+=`<text x="${x}" y="${y+26}" font-size="14" text-anchor="middle" fill="#111">${k/2}</text>`;}
+  return s+`<text x="448" y="${y+26}" font-size="14" fill="#111">cm</text>`;}
+/* seg: [{name, cm, leg}] – 10 cm = 400 px */
+function streifenDia(seg,ohneRahmen){
+  let s=`<svg viewBox="0 0 480 ${60+44+Math.ceil(seg.length/2)*34}" role="img" aria-label="Streifendiagramm">`,x=30;
+  seg.forEach((t,k)=>{const w=t.cm*40;s+=`<rect x="${f1(x)}" y="14" width="${f1(w)}" height="46" fill="${FARB[k]}" stroke="#222" stroke-width="2"/>`;x+=w;});
+  if(!ohneRahmen)s+=`<rect x="30" y="14" width="400" height="46" fill="none" stroke="#222" stroke-width="2"/>`;
+  s+=skala(66);
+  seg.forEach((t,k)=>{const sp=k%2,zl=Math.floor(k/2);s+=legende(30+sp*220,110+zl*34,[{f:FARB[k],t:t.leg||t.name}]);});
+  return s+`</svg>`;}
+function streifenLive(v,name){
+  const zuLang=v>10, cm=isNaN(v)||v==null?0:Math.max(0,Math.min(10,v));
+  let s=`<svg viewBox="0 0 480 140" role="img" aria-label="Streifen"><rect x="30" y="14" width="400" height="46" fill="#fff" stroke="#222" stroke-width="2"/>`;
+  if(cm>0)s+=`<rect x="30" y="14" width="${f1(cm*40)}" height="46" fill="${FARB[0]}" stroke="#222" stroke-width="2"/>`+(cm*40>=70?`<text x="${f1(30+cm*20)}" y="43" font-size="16" font-weight="700" text-anchor="middle" fill="#111">${esc(name)}</text>`:"");
+  return s+skala(66)+`<text x="30" y="128" font-size="15" fill="#555">${zuLang?`${dez(v)} cm passen nicht: Der ganze Streifen ist nur 10 cm lang.`:cm>0?`Dein Abschnitt: ${dez(cm)} cm`:"Gib die Länge ein. Dann wächst dein Abschnitt."}</text></svg>`;}
+function kreisLive(v,name){
+  const d=isNaN(v)||v==null?0:Math.max(0,Math.min(360,v));
+  let s=`<svg viewBox="0 0 300 300" style="max-width:300px" role="img" aria-label="Kreis"><circle cx="150" cy="150" r="125" fill="#fff" stroke="#222" stroke-width="2"/><line x1="150" y1="150" x2="150" y2="25" stroke="#222" stroke-width="2"/>`;
+  if(d>0)s+=sektor(150,150,125,0,d,FARB[1])+bogen(150,150,0,d,dez(d)+"°");
+  return s+`<circle cx="150" cy="150" r="3" fill="#111"/></svg><div style="text-align:center;color:#555;font-size:.95rem">${d>0?`Dein Ausschnitt für „${esc(name)}“`:"Gib den Winkel ein. Dann dreht sich dein Kreisausschnitt auf."}</div>`;}
+function teile(n,schritt,min){ /* n Prozentsätze, Vielfache von schritt, jeder ≥ min, Summe 100 */
+  for(let k=0;k<500;k++){const a=[];let rest=100;
+    for(let j=0;j<n-1;j++){const max=rest-min*(n-1-j);const opts=[];for(let p=min;p<=max;p+=schritt)opts.push(p);if(!opts.length)break;const p=pick(opts.filter(q=>q<=60));if(p==null)break;a.push(p);rest-=p;}
+    if(a.length===n-1&&rest>=min&&rest%schritt===0){a.push(rest);return shuffle(a);}}
+  return[40,30,20,10];}
+
+/* 5-2 Diagramme zeichnen (10 Aufgaben): 0★ Zehnerprozente · 1★ Komma-cm, Winkel aus Fünferprozenten · 2★ Runden auf ganze Grad, Prozentsatz erst aus Anzahlen */
+function g5b(lv,i){
+  if(i==null)i=rnd(0,9);
+  const u=pick(UMFR),name=pick(u.k),kreis=i%2===1;
+  let p,vorher="",anz=null;
+  if(lv===0)p=pick([10,20,30,40,50,60,70,80,90]);
+  else if(lv===1)p=pick([5,15,25,35,45,55,65,75]);
+  else if(i<5)p=pick([12,23,7,13,17,22,28,33,8,42,14,19,27,31,38,6]);
+  else{const G=pick([20,25,50]);let n;for(let k=0;k<100;k++){n=rnd(2,Math.floor(G*.6));if(Number.isInteger(n*100/G)&&(n*100/G)%10!==0)break;}
+    p=n*100/G;anz={G,n};vorher=`${n} von ${G}: x = ${n} · 100 ÷ ${G} = ${p} → ${P_("p % = "+p+" %")}<br>`;}
+  const text=anz?`Umfrage in der Klasse 7b „${u.t}“: ${anz.G} Schüler haben abgestimmt, ${anz.n} davon für „${name}“. Berechne zuerst den Prozentsatz.`:`${tit(u)}: „${name}“ hat ${p} %.`;
+  if(!kreis){const cm=p/10;
+    return{q:`${text}<br>Wie lang wird der Abschnitt im Streifendiagramm (10 cm lang)?`,num:rund(cm),unit:"cm",label:"Länge =",kat:String(cm),
+      live:v=>streifenLive(v,name),
+      tipp:v=>gleich(v,p)?"Das ist der Prozentsatz. Der ganze Streifen (10 cm) sind 100 %, also 10 % ≙ 1 cm.":anz&&gleich(v,anz.n/10)?"Berechne zuerst den Prozentsatz.":"",
+      ex:`${vorher}10 cm ≙ 100 %, also Länge = p ÷ 10 → ${p} ÷ 10 = ${dez(cm)} cm.`};}
+  const exakt=rund(p*3.6),deg=Math.round(p*3.6),gerundet=!Number.isInteger(exakt);
+  return{q:`${text}<br>Wie groß wird der Winkel im Kreisdiagramm?${gerundet||lv===2?" Runde auf ganze Grad.":""}`,num:deg,unit:"°",label:"Winkel =",kat:String(deg),
+    live:v=>kreisLive(v,name),
+    tipp:v=>gleich(v,exakt)&&gerundet?"Runde auf ganze Grad.":gleich(v,p)?"Das ist der Prozentsatz. Rechne ihn in Grad um: 1 % ≙ 3,6°.":anz&&gleich(v,Math.round(anz.n*3.6))?"Berechne zuerst den Prozentsatz.":"",
+    ex:`${vorher}100 % ≙ 360°, also 1 % ≙ 3,6°.<br>Weg 1: ${p} · 3,6 = ${dez(exakt)}${gerundet?` ≈ ${deg}°`:"°"}<br>Weg 2: x = 360 · ${p} ÷ 100 = ${dez(exakt)}${gerundet?` → auf ganze Grad gerundet ${deg}°`:" → "+deg+"°"}`};
+}
+
+/* 5-3 Diagramme ablesen (10 Aufgaben): 0★ Halb-/Viertelkreis, Streifen mit ganzen cm · 1★ Prozentsatz aus dem Winkel, Streifen mit halben cm, Anzahl berechnen · 2★ „Stimmt das?“, Anzahl berechnen */
+const STIMMT=["Stimmt.","Stimmt nicht: Zusammen sind es nicht 100 %.","Stimmt nicht: Ein Abschnitt ist falsch gezeichnet."];
+function stimmtDas(){
+  const u=pick(UMFR),art=pick(["ok","ok","summe","falsch"]),kreis=rnd(0,1)===1;
+  const ps=teile(4,5,10);let leg=ps.slice(),zeich=ps.slice(),erk;
+  if(art==="summe"){const k=rnd(0,3),d=pick([5,10,-5]);if(leg[k]+d<5)leg[k]+=5;else leg[k]+=d;
+    const s=leg.reduce((a,b)=>a+b,0);zeich=leg.map(p=>p*100/s);erk=`${leg.map(p=>p+" %").join(" + ")} = ${s} % ≠ 100 %. Also stimmt das Diagramm nicht.`;}
+  else if(art==="falsch"){const k=rnd(0,3),j=(k+1+rnd(0,2))%4,d=Math.min(10,ps[j]-5);zeich[k]+=d;zeich[j]-=d;
+    erk=kreis?`„${u.k[k]}“ hat ${ps[k]} %, also ${ps[k]} · 3,6 = ${dez(ps[k]*3.6)}°. Gezeichnet sind aber ${dez(zeich[k]*3.6)}°.`:`„${u.k[k]}“ hat ${ps[k]} %, also ${ps[k]} ÷ 10 = ${dez(ps[k]/10)} cm. Gezeichnet sind aber ${dez(zeich[k]/10)} cm.`;}
+  else erk=`Zusammen sind es ${leg.join(" % + ")} % = 100 %, und jeder Abschnitt passt: ${kreis?ps.map(p=>`${p} % ≙ ${dez(p*3.6)}°`).join(", "):ps.map(p=>`${p} % ≙ ${dez(p/10)} cm`).join(", ")}.`;
+  const zeigGrad=kreis&&art!=="summe";
+  const svg=kreis?kreisDia(zeich.map((p,k)=>({name:u.k[k],deg:rund(p*3.6),leg:`${u.k[k]}: ${leg[k]} %`,grad:zeigGrad}))):
+    streifenDia((art==="summe"?leg:zeich).map((p,k)=>({name:u.k[k],cm:p/10,leg:`${u.k[k]}: ${leg[k]} %`})));
+  const ok=art==="ok"?STIMMT[0]:art==="summe"?STIMMT[1]:STIMMT[2];
+  return Object.assign(mc(`${tit(u)}: Stimmt das ${kreis?"Kreisdiagramm":"Streifendiagramm"}? Prüfe ${kreis?"die Winkel":"die Längen"} und die Prozente.`,svg,ok,STIMMT.filter(x=>x!==ok),erk),{kat:ok});
+}
+function g5c(lv,i){
+  if(i==null)i=rnd(0,9);
+  const u=pick(UMFR);
+  if(lv===0){
+    if(i%2===0){const ziel=pick([50,25,50,25,75]);let rest;
+      for(let k=0;k<100;k++){rest=teile(ziel===75?1:ziel===50?2:3,5,10).map(p=>p*(100-ziel)/100);if(rest.every(p=>p>=5&&Number.isInteger(p)))break;}
+      const ps=[ziel,...rest],k0=0,svg=kreisDia(ps.map((p,k)=>({name:u.k[k],deg:p*3.6})));
+      const art=ziel===50?"ein Halbkreis":ziel===25?"ein Viertelkreis":"drei Viertel des Kreises";
+      return Object.assign(mc(`${tit(u)}: Wie viel Prozent hat „${u.k[k0]}“?`,svg,ziel+" %",["50 %","25 %","75 %","10 %","180 %","90 %"],`„${u.k[k0]}“ ist ${art}: ${ziel===50?"180° = 50 %":ziel===25?"90° = 25 %":"270° = 75 %"}.`),{kat:String(ziel)});}
+    const ps=teile(4,10,10),k=rnd(0,3);
+    return Object.assign(num(`${tit(u)}: Lies ab. Wie viel Prozent hat „${u.k[k]}“?`,ps[k],"%",`Der Abschnitt ist ${ps[k]/10} cm lang. p = Länge in cm · 10 → ${ps[k]/10} · 10 = ${ps[k]} %.`,streifenDia(ps.map((p,j)=>({name:u.k[j],cm:p/10})))),{label:"p =",kat:String(ps[k])});
+  }
+  const typ=lv===1?i%3:(i<5?3:2);
+  if(typ===3)return stimmtDas();
+  const ps=teile(4,5,10),k=rnd(0,3);
+  if(typ===0){const d=rund(ps[k]*3.6);
+    return Object.assign(num(`${tit(u)}: Wie viel Prozent hat „${u.k[k]}“?`,ps[k],"%",`p = Winkel ÷ 3,6 → ${dez(d)} ÷ 3,6 = ${ps[k]} %.<br>(Oder: x = ${dez(d)} · 100 ÷ 360 = ${ps[k]})`,
+      kreisDia(ps.map((p,j)=>({name:u.k[j],deg:rund(p*3.6),grad:j===k})))),{label:"p =",kat:String(ps[k]),tipp:v=>gleich(v,d)?"Das ist der Winkel. Rechne ihn in Prozent um: 3,6° ≙ 1 %.":""});}
+  if(typ===1){const ps2=ps.filter(p=>p%10===5).length?ps:teile(4,5,10);
+    return Object.assign(num(`${tit(u)}: Lies ab. Wie viel Prozent hat „${u.k[k]}“?`,ps2[k],"%",`Der Abschnitt ist ${dez(ps2[k]/10)} cm lang. p = Länge in cm · 10 → ${dez(ps2[k]/10)} · 10 = ${ps2[k]} %.`,
+      streifenDia(ps2.map((p,j)=>({name:u.k[j],cm:p/10})))),{label:"p =",kat:String(ps2[k])});}
+  /* Anzahl berechnen */
+  const G=pick([20,40,60]),W=G*ps[k]/100,kreis=lv===2?rnd(0,1)===1:true,d=rund(ps[k]*3.6);
+  const svg=kreis?kreisDia(ps.map((p,j)=>({name:u.k[j],deg:rund(p*3.6),grad:j===k}))):streifenDia(ps.map((p,j)=>({name:u.k[j],cm:p/10})));
+  const ablesen=kreis?`p = ${dez(d)} ÷ 3,6 = ${ps[k]} %`:`p = ${dez(ps[k]/10)} · 10 = ${ps[k]} %`;
+  return Object.assign(num(`${tit(u)}: ${G} Schüler wurden befragt. Wie viele haben „${u.k[k]}“ gewählt?`,W,"",
+    `Ablesen: ${ablesen}.<br>${glZeile(G,ps[k])} → x = ${G} · ${ps[k]} ÷ 100 = ${W}. Also ${W} Schüler.`,svg),
+    {label:"Anzahl =",kat:String(W),tipp:v=>gleich(v,ps[k])?"Das ist der Prozentsatz. Wie viele Schüler sind das von "+G+"?":""});
+}
+
+/* 5-4 Zinsen (Sachaufgaben, Runde = 5): 0★ Begriffe, Zinsen · 1★ Zinsen, Zinssatz, Kapital · 2★ Zinssatz/Kapital, Sparangebote vergleichen, Ratenzahlung */
+const SPARER=[["Lena","sie"],["Ben","er"],["Mia","sie"],["Luca","er"],["Emma","sie"],["Noah","er"],["Lea","sie"],["Finn","er"]];
+const HERKUNFT=["von der Jugendweihe","aus dem Ferienjob","zum Geburtstag","vom Taschengeld","von der Konfirmation"];
+function begriffe(){
+  const P=[["das Kapital K","dem Grundwert G"],["die Zinsen Z","dem Prozentwert W"],["der Zinssatz p %","dem Prozentsatz p %"]];
+  const [a,b]=pick(P),rev=rnd(0,1)===1;
+  const ex="Kapital K ↔ Grundwert G · Zinsen Z ↔ Prozentwert W · Zinssatz p % ↔ Prozentsatz p %";
+  if(rev){const ziel=a.replace(/^(das|die|der) /,""),alle=P.map(x=>x[0].replace(/^(das|die|der) /,""));
+    return Object.assign(mc(`Zinsrechnung ist Prozentrechnung. Was entspricht ${b}?`,"",ziel,alle.concat(["der Bonus"]),ex),{kat:ziel});}
+  const ziel=b.replace(/^dem /,"").replace(/^(\w)/,m=>m),alle=P.map(x=>x[1].replace(/^dem /,""));
+  return Object.assign(mc(`Zinsrechnung ist Prozentrechnung. ${a.charAt(0).toUpperCase()+a.slice(1)} entspricht …`,"",ziel,alle.concat(["dem Promille"]).map(x=>x.replace(/^dem /,"")),ex),{kat:ziel});
+}
+function zinsen(lv){
+  const [n,pr]=pick(SPARER);let K,p,Z;
+  for(let k=0;k<200;k++){K=lv===0?pick([100,200,300,400,500,600,800,1000]):pick([240,360,450,750,1200,350,650]);p=lv===0?pick([1,2,3,4,5]):pick([1.5,2.5,0.5,3.5,2,3]);Z=cent(K*p/100);if(gleich(Z,K*p/100))break;}
+  const muster=`${n} bekommt ${eur(Z)} € Zinsen.`;
+  return{q:`${n} hat ${K} € ${pick(HERKUNFT)} bekommen und legt das Geld für ein Jahr bei der Bank an. Die Bank zahlt ${dez(p)} % Zinsen. Wie viel Euro Zinsen bekommt ${pr} nach einem Jahr?`,kat:String(Z),
+    form:ergF(0,"Z =","€")+satzF(1),check:v=>[eqC(v[0],Z),satzPruef(v[1],Z,"€").ok],
+    tipp:(v,r)=>eqC(v[0],K+Z)?"Gesucht sind nur die Zinsen, nicht das ganze Guthaben.":r[0]?satzTipp(v[1],Z,"€"):"",
+    loes:`Z = ${eur(Z)} €. Antwort: „${muster}“`,
+    ex:`Kapital ${G_("K = "+K+" €")}, Zinssatz ${P_("p % = "+dez(p)+" %")}, Zinsen ${W_("Z = x")}<br>${glZeile(K,p)} → x = ${K} · ${dez(p)} ÷ 100 = ${eur(Z)} → Z = ${eur(Z)} €`};
+}
+function zinssatz(){
+  const [n,pr]=pick(SPARER);let K,p,Z;
+  for(let k=0;k<200;k++){K=pick([200,400,500,600,800,1000,1200,250]);p=pick([1,2,3,4,1.5,2.5,0.5]);Z=K*p/100;if(gleich(Z,cent(Z)))break;}
+  const muster=`Der Zinssatz beträgt ${dez(p)} %.`;
+  return{q:`${n} legt ${K} € für ein Jahr bei der Bank an. Nach einem Jahr bekommt ${pr} ${eur(Z)} € Zinsen. Wie hoch ist der Zinssatz?`,kat:String(p),
+    form:ergF(0,"p =","%")+satzF(1),check:v=>[eqN(v[0],p),satzPruef(v[1],p,"%").ok],
+    tipp:(v,r)=>eqN(v[0],K/Z)||eqN(v[0],Z*K/100)?"Gesucht ist p: x = Z · 100 ÷ K.":r[0]?satzTipp(v[1],p,"%"):"",
+    loes:`p = ${dez(p)} %. Antwort: „${muster}“`,
+    ex:`Kapital ${G_("K = "+K+" €")}, Zinsen ${W_("Z = "+eur(Z)+" €")}, gesucht ${P_("p % = x")}<br>${glZeile3(K,eur(Z))} → x = ${eur(Z)} · 100 ÷ ${K} = ${dez(p)} → p % = ${dez(p)} %`};
+}
+function kapital(){
+  const [n,pr]=pick(SPARER);let K,p,Z;
+  for(let k=0;k<200;k++){K=pick([200,300,400,500,600,750,800,1000,1500]);p=pick([2,3,4,5,2.5,1.5]);Z=K*p/100;if(gleich(Z,cent(Z))&&K!==500)break;}
+  const muster=`${n} muss ${K} € anlegen.`;
+  return{q:`${n} möchte nach einem Jahr ${eur(Z)} € Zinsen bekommen. Die Bank zahlt ${dez(p)} % Zinsen. Wie viel Geld muss ${pr} anlegen?`,kat:String(K),
+    form:ergF(0,"K =","€")+satzF(1),check:v=>[eqC(v[0],K),satzPruef(v[1],K,"€").ok],
+    tipp:(v,r)=>eqC(v[0],Z*p/100)?"Die Zinsen sind nur ein Teil. Gesucht ist das Ganze, das Kapital K ≙ 100 %.":r[0]?satzTipp(v[1],K,"€"):"",
+    loes:`K = ${K} €. Antwort: „${muster}“`,
+    ex:`Zinsen ${W_("Z = "+eur(Z)+" €")}, Zinssatz ${P_("p % = "+dez(p)+" %")}, gesucht ${G_("K = x")} ≙ 100 %<br>${fr("x","100 %")} = ${fr(eur(Z),dez(p)+" %")} → x = ${eur(Z)} · 100 ÷ ${dez(p)} = ${K} → K = ${K} €`};
+}
+function sparvergleich(){
+  const [n,pr]=pick(SPARER);
+  for(let k=0;k<300;k++){
+    const K=pick([200,300,400,500,600,800,1000,1500]),pa=pick([3,4,2.5,3.5]),pb=pick([1,1.5,2]),b=pick([5,10,15,20]);
+    const ZA=cent(K*pa/100),EB=cent(K*pb/100+b);if(Math.abs(ZA-EB)<1)continue;
+    const L=ZA>EB?"A":"B",M=Math.max(ZA,EB),muster=`Bei Bank ${L} bekommt ${n} mehr, nämlich ${eur(M)} €.`;
+    return{q:`${n} will ${K} € ein Jahr lang anlegen. Bank A zahlt ${dez(pa)} % Zinsen. Bank B zahlt ${dez(pb)} % Zinsen und schenkt zusätzlich ${b} € Startbonus. Bei welcher Bank bekommt ${pr} nach einem Jahr mehr Geld dazu?`,kat:L+M,
+      form:ergF(0,"Bank A: Zinsen =","€")+ergF(1,"Bank B: Zinsen + Bonus =","€")+satzF(2),
+      check:v=>[eqC(v[0],ZA),eqC(v[1],EB),satzPruef(v[2],M,"€").ok&&nennt(v[2],"bank",L)],
+      tipp:(v,r)=>eqC(v[1],cent(K*pb/100))?"Bei Bank B kommt noch der Startbonus dazu.":(!r[0]||!r[1])?"":!nennt(v[2],"bank",L)?"Schreibe im Antwortsatz, bei welcher Bank es mehr gibt (Bank A oder Bank B).":satzTipp(v[2],M,"€"),
+      loes:`Bank A: ${eur(ZA)} €, Bank B: ${eur(EB)} €. Antwort: „${muster}“`,
+      ex:`Bank A: x = ${K} · ${dez(pa)} ÷ 100 = ${eur(ZA)} €<br>Bank B: x = ${K} · ${dez(pb)} ÷ 100 = ${eur(K*pb/100)} €, dazu ${b} € Bonus → ${eur(EB)} €<br>Bank ${L} bringt ${eur(Math.abs(ZA-EB))} € mehr.`};
+  }
+  return zinsen(1);
+}
+const RATENWARE=["Ein Handy","Ein Laptop","Eine Spielkonsole","Ein E-Scooter","Ein Tablet","Ein Gaming-PC","Ein E-Bike"];
+function ratenzahlung(){
+  for(let k=0;k<500;k++){
+    const B=pick([250,300,400,500,600,800,1000,1200]),p=pick([4,5,6,8,10,12,15,20]),n=pick([6,10,12,24]);
+    const T=B*(100+p)/100,R=T/n;if(!gleich(R,cent(R))||!Number.isInteger(T))continue;
+    const D=T-B,muster=`Die Ratenzahlung ist ${dez(p)} % teurer.`;
+    return{q:`${pick(RATENWARE)} kostet bar ${B} €. Bei Ratenzahlung zahlst du ${n} Raten zu je ${eur(R)} €. Wie viel Euro zahlst du mehr? Um wie viel Prozent ist die Ratenzahlung teurer?`,kat:String(p),
+      form:ergF(0,"Mehrkosten =","€")+ergF(1,"p =","%")+satzF(2),
+      check:v=>[eqC(v[0],D),eqN(v[1],p),satzPruef(v[2],p,"%").ok],
+      tipp:(v,r)=>eqC(v[0],T)?`Das ist der Gesamtbetrag. Wie viel ist das mehr als ${B} €?`:eqN(v[1],rund(D*100/T))?"Der Grundwert ist der Barpreis (100 %).":(!r[0]||!r[1])?"":satzTipp(v[2],p,"%"),
+      loes:`Mehrkosten = ${eur(D)} €, p = ${dez(p)} %. Antwort: „${muster}“`,
+      ex:`${n} · ${eur(R)} € = ${eur(T)} € → ${eur(T)} € − ${B} € = ${eur(D)} € mehr<br>Barpreis ${G_("G = "+B+" €")} ≙ 100 %, Mehrkosten ${W_("W = "+eur(D)+" €")}<br>${glZeile3(B,eur(D))} → x = ${eur(D)} · 100 ÷ ${B} = ${dez(p)} → ${P_("p % = "+dez(p)+" %")}`};
+  }
+}
+function g5d(lv,i){
+  if(i==null)i=rnd(0,4);
+  if(lv===0)return i===0?begriffe():zinsen(0);
+  if(lv===1)return i===0?zinsen(1):i<3?zinssatz():kapital();
+  return i===0?(rnd(0,1)?zinssatz():kapital()):i<3?sparvergleich():ratenzahlung();
 }
 
 const BOSS={id:"m",name:"Endgegner",gen:lv=>{const t=pick(ALLE);return t.gen(Math.min(2,1+lv));}};
@@ -557,7 +970,7 @@ function kopf(){
 function show(){
   const a=R.aufgaben[R.i];R.versuch=0;
   const T=x=>HTML?x:esc(x), EINH=a.unit!=null?a.unit:STD_EINHEIT;
-  let h=kopf()+`<section class="card"><p class="frage">${T(a.q)}</p>${a.svg?`<div class="fig">${a.svg}</div>`:""}`;
+  let h=kopf()+`<section class="card"><p class="frage">${T(a.q)}</p>${a.svg||a.live?`<div class="fig" id="fig">${a.live?a.live(null):a.svg}</div>`:""}`;
   if(a.opts)h+=`<div class="opts">${a.opts.map((o,i)=>`<button data-o="${i}">${T(o)}</button>`).join("")}</div>`;
   else if(a.form)h+=`<div class="form">${a.form}<div><button class="btn" type="button" id="pruefBtn">Prüfen</button></div></div>`;
   else h+=`<div class="num" id="numForm"><label for="ein">${a.label||"Antwort:"}</label><input type="text" id="ein" inputmode="decimal" autocomplete="off"> <span class="einheit">${EINH}</span><button class="btn" type="button" id="pruefBtn">Prüfen</button></div>`;
@@ -579,11 +992,11 @@ function show(){
       ins.forEach((x,k)=>{x.disabled=true;x.classList.remove("gelb");x.classList.add(r[k]?"gut":"schlecht");});btnP.disabled=true;feedback(ok,a);};
     btnP.addEventListener("click",pruef);ins.forEach(x=>x.addEventListener("keydown",ev=>{if(ev.key==="Enter"){ev.preventDefault();pruef();}}));}
   else{const inp=document.getElementById("ein");inp.focus();
-    inp.addEventListener("input",()=>inp.classList.remove("gelb"));
+    inp.addEventListener("input",()=>{inp.classList.remove("gelb");if(a.live)document.getElementById("fig").innerHTML=a.live(zahl(inp.value));});
     const btnP=document.getElementById("pruefBtn");const pruef=()=>{
       const v=parseFloat(inp.value.replace(/\s/g,"").replace(",",".").replace(/[%‰€°]/g,""));if(isNaN(v))return;
       const ok=Math.abs(v-a.num)<1e-9;
-      if(!ok&&R.versuch===0){R.versuch=1;inp.classList.add("gelb");hinweis();inp.select();return;}
+      if(!ok&&R.versuch===0){R.versuch=1;inp.classList.add("gelb");hinweis(a.tipp?a.tipp(v):"");inp.select();return;}
       inp.classList.remove("gelb");inp.disabled=true;btnP.disabled=true;feedback(ok,a);};
     btnP.addEventListener("click",pruef);inp.addEventListener("keydown",ev=>{if(ev.key==="Enter"){ev.preventDefault();pruef();}});}
 }
