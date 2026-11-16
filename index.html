@@ -1,4 +1,4 @@
-<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<!DOCTYPE html><html lang="de"><head><meta charset="utf-8"><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style>
 <title>Trainer Prozentrechnung</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <style>
@@ -139,7 +139,7 @@ input[type=text]{font:inherit;border:2px solid var(--glasrand);background:rgba(0
 .fehlz{font-weight:700;font-size:.95rem;background:rgba(255,255,255,.12);border:1.5px solid rgba(255,255,255,.3);border-radius:999px;padding:5px 14px}
 .fehlz.zuviel{background:#ff6b6b;border-color:#ff6b6b;color:#fff}
 </style>
-
+</head><body>
 <svg id="himmel" aria-hidden="true"></svg>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
   <linearGradient id="gold" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff2a8"/><stop offset=".45" stop-color="#ffd23f"/><stop offset="1" stop-color="#f29a00"/></linearGradient>
@@ -162,7 +162,7 @@ input[type=text]{font:inherit;border:2px solid var(--glasrand);background:rgba(0
 </defs></svg>
 <div class="wrap">
   <div class="top">
-    <div><div class="schule">EMIL-PETRI-SCHULE ARNSTADT · MATHEMATIK KLASSE 7</div><h1>Trainer <span>Prozentrechnung</span></h1></div>
+    <div><div class="schule">EMIL-PETRI-SCHULE ARNSTADT – MATHEMATIK KLASSE 7</div><h1>Trainer <span>Prozentrechnung</span></h1></div>
     <div class="zaehlwerk"><div class="zaehler" id="zaehler" aria-label="Gesammelte Sterne"><svg><use href="#st" fill="url(#gold)" stroke="#b86e00" stroke-width="1.2"/></svg><span id="zahl">0</span></div>
     <div class="zaehler" id="muenzer" aria-label="Credits"><svg viewBox="0 0 300 300"><use href="#credit"/></svg><span id="mzahl">0</span></div></div>
   </div>
@@ -173,7 +173,9 @@ input[type=text]{font:inherit;border:2px solid var(--glasrand);background:rgba(0
 <script>
 (function(){
 /* ================= Daten ================= */
-const KEY="trainer-prozentrechnung-v1", CODE="EPS2026", RUNDE=10, FEHLER_ERLAUBT=2;
+const KEY="trainer-prozentrechnung-v1", CODE_H=1428710757, RUNDE=10, FEHLER_ERLAUBT=2;
+const erlaubt=n=>n<=5?1:FEHLER_ERLAUBT; /* kurze Runden (5 Sachaufgaben): nur 1 Fehler */
+const codeHash=t=>{let h=5381;for(const c of t)h=(h*33^c.charCodeAt(0))>>>0;return h;};
 const LEVELS=[
   {nr:1,name:"Grundbegriffe",spiele:[
     {id:"1a",nr:"1-1",name:"Umwandeln und Erweitern",gen:g1a},
@@ -204,7 +206,7 @@ try{const r=localStorage.getItem(KEY);if(r)S=Object.assign(S,JSON.parse(r));}cat
 S.bonus=S.bonus||{};S.topf=S.topf||0;S.muenzen=S.muenzen||0;
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}}
 const stars=id=>S.stars[id]||0;
-function offen(sp){if(S.lehrer)return true;const i=ALLE.findIndex(t=>t.id===sp.id);return i===0||stars(ALLE[i-1].id)>=1;}
+function offen(sp){if(S.lehrer)return true;const i=ALLE.findIndex(t=>t.id===sp.id);return ALLE.slice(0,i).every(t=>stars(t.id)>=1);} /* offen erst, wenn ALLE Spiele davor einen Stern haben */
 const bossOffen=()=>S.lehrer||ALLE.every(t=>stars(t.id)>=1);
 const summe=()=>Object.values(S.stars).reduce((a,b)=>a+b,0);
 
@@ -248,11 +250,14 @@ function g1a(lv){
 
 /* 1-2 Prozent und Promille */
 function g1b(lv){
-  if(lv===0){const t=rnd(0,3);
+  if(lv===0){const t=rnd(0,9);
     if(t===0)return mc("Was bedeutet Promille?","","von Tausend",["von Hundert","von Zehn","eine Million"],"Promille (‰) heißt „von Tausend“. 1 ‰ = "+fr(1,1000)+".");
     if(t===1)return mc("1 ‰ ist gleich …","","0,001",["0,01","0,1","1"],"1 ‰ = "+fr(1,1000)+" = 0,001.");
     if(t===2)return num("1 % = ? ‰",10,"‰","1 % = "+fr(10,1000)+" = 10 ‰. 1 ‰ ist der 10. Teil von 1 %.");
-    const p=rnd(2,9);return num(`${p} % = ? ‰`,p*10,"‰",`Prozent → Promille: mal 10. ${p} % = ${p*10} ‰.`);}
+    if(t===3)return mc("Welches Zeichen steht für Promille?","","‰",["%","°","€"],"‰ ist das Promillezeichen. % heißt Prozent.");
+    if(t===4)return num(`1 ‰ = ${fr(1,"?")}`,1000,"","Promille heißt „von Tausend“: 1 ‰ = "+fr(1,1000)+".");
+    if(t===5)return mc("Was ist größer?","","1 %",["1 ‰","beide sind gleich groß"],"1 % = 10 ‰. Also ist 1 % größer als 1 ‰.");
+    const p=rnd(2,20);return num(`${p} % = ? ‰`,p*10,"‰",`Prozent → Promille: mal 10. ${p} % = ${p*10} ‰.`);}
   if(lv===1){const t=rnd(0,3);
     if(t===0){const p=rnd(2,9)*10;return num(`${p} ‰ = ? %`,p/10,"%",`Promille → Prozent: durch 10. ${p} ‰ = ${p/10} %.`);}
     if(t===1){const p=pick([0.5,0.2,0.8,1.5,2.5]);return num(`${dez(p)} % = ? ‰`,p*10,"‰",`Mal 10: ${dez(p)} % = ${dez(p*10)} ‰.`);}
@@ -269,15 +274,15 @@ function g1b(lv){
 
 /* 1-3 G, W und p % erkennen */
 const SIT=[
- (G,W,p)=>({t:`Von ${G} Schülern der Klasse fahren ${W} mit dem Bus. Das sind ${p} %.`,u:"Schüler",o:0}),
+ (G,W,p)=>({t:`Von ${G} Kindern im Sportverein kommen ${W} mit dem Fahrrad zum Training. Das sind ${p} %.`,u:"Kinder",o:0}),
  (G,W,p)=>({t:`Eine Jacke kostet ${G} €. Im Sale spart man ${p} %, das sind ${W} €.`,u:"€",o:1}),
  (G,W,p)=>({t:`${p} % der ${G} Lose sind Gewinne. Das sind ${W} Lose.`,u:"Lose",o:2}),
  (G,W,p)=>({t:`Lisa hat ${W} von ${G} Punkten erreicht. Das sind ${p} %.`,u:"Punkte",o:0}),
  (G,W,p)=>({t:`Im Kino sind ${W} Plätze besetzt. Das sind ${p} % der ${G} Plätze.`,u:"Plätze",o:2}),
  (G,W,p)=>({t:`Ein Garten ist ${G} m² groß. Auf ${W} m² wachsen Blumen, das sind ${p} %.`,u:"m²",o:0}),
- (G,W,p)=>({t:`${W} € Rabatt gibt es auf ein Fahrrad für ${G} €. Das sind ${p} %.`,u:"€",o:2})];
+ (G,W,p)=>({t:`${W} € Rabatt gibt es auf einen Einkauf für ${G} €. Das sind ${p} %.`,u:"€",o:2})];
 const PG=[[10,[20,30,40,50,60,80,120,200,250]],[20,[20,30,40,50,60,80,150,200]],[25,[20,40,60,80,120,200,400]],[50,[20,30,40,60,80,140,200]],[5,[20,40,60,80,200,300]],[75,[20,40,80,120,200]],[90,[20,30,50,60]]];
-function situation(){const [p,gs]=pick(PG),G=pick(gs),W=G*p/100;const s=pick(SIT)(G,W,p);return{G,W,p,...s};}
+function situation(){let p,gs,G,W;do{[p,gs]=pick(PG);G=pick(gs);W=G*p/100;}while(W<2);const s=pick(SIT)(G,W,p);return{G,W,p,...s};}
 function g1c(lv){
   const s=situation();const was=pick(["G","W","p"]);
   const name={G:"der Grundwert G",W:"der Prozentwert W",p:"der Prozentsatz p %"}[was];
@@ -293,7 +298,7 @@ function g1c(lv){
 }
 
 /* 1-4 Prozentwert im Kopf */
-const KM={50:{w:": 2",f:G=>G/2},10:{w:": 10",f:G=>G/10},1:{w:": 100",f:G=>G/100},25:{w:": 4",f:G=>G/4},20:{w:": 5",f:G=>G/5},75:{w:": 4 · 3",f:G=>G/4*3}};
+const KM={50:{w:"÷ 2",f:G=>G/2},10:{w:"÷ 10",f:G=>G/10},1:{w:"÷ 100",f:G=>G/100},25:{w:"÷ 4",f:G=>G/4},20:{w:"÷ 5",f:G=>G/5},75:{w:"÷ 4 · 3",f:G=>G/4*3}};
 const KG={50:[20,40,60,80,90,140,160,300],10:[30,50,90,120,250,400,700],1:[100,200,300,500,700,900],25:[20,40,80,120,200,400],20:[20,35,50,60,80,150],75:[12,20,40,60,80,120]};
 function g1d(lv){
   const ps=lv===0?[50,10,1]:lv===1?[25,20,50,10]:[75,25,20,10,1];
@@ -310,9 +315,10 @@ const P2=[[10,20,25,50,5,2,30,40,60,75,1],[3,7,8,12,14,15,17,22,35,45,65],[2.5,4
 const G2=[[40,60,80,120,200,240,300,400,450,500,600,800],[150,250,350,480,500,650,700,900,1200,2400],[60,80,160,240,400,480,800,1200,2000,3500]];
 const nk=x=>{const s=String(rund(x));return s.includes(".")?s.split(".")[1].length:0;};
 function pw(lv,maxNk,ps,gs){ps=ps||P2[lv];gs=gs||G2[lv];
-  for(let k=0;k<400;k++){const p=pick(ps),G=pick(gs),W=rund(G*p/100);if(nk(W)<=maxNk)return{p,G,W};}
+  for(let k=0;k<400;k++){const p=pick(ps),G=pick(gs),W=rund(G*p/100);if(nk(W)<=maxNk&&G!==p)return{p,G,W};}
   return{p:10,G:450,W:45};}
-const zahl=s=>parseFloat(String(s).replace(/\s/g,"").replace(",",".").replace(/[%‰€°]/g,""));
+const zahl=s=>{let t=String(s).replace(/\s/g,"").replace(/[%‰€°]/g,"");if(/^[1-9]\d{0,2}(\.\d{3})+(,\d+)?$/.test(t))t=t.replace(/\./g,""); /* Tausenderpunkt: 1.200 = 1200 */
+  return parseFloat(t.replace(",","."));};
 const gleich=(a,b)=>!isNaN(a)&&Math.abs(a-b)<1e-9;
 const eqN=(s,n)=>gleich(zahl(s),n);
 const eqX=s=>String(s).trim().toLowerCase()==="x";
@@ -353,23 +359,23 @@ function g2b(lv,i){
 
 /* 2-3 Sachaufgaben: Ergebnis und Antwortsatz, Runde = 5 Aufgaben */
 const SACH=[
- {u:"",G:[[20,25,30,40],[25,28,32,50],[24,40,80]],t:(G,p)=>`In der Klasse 7b sind ${G} Schüler. ${p} % von ihnen fahren mit dem Bus. Wie viele Schüler fahren mit dem Bus?`,a:W=>`${W} Schüler fahren mit dem Bus.`},
- {u:"€",t:(G,p)=>`Ein Fahrrad kostet ${G} €. Es gibt ${p} % Rabatt. Wie viel Euro spart man?`,a:W=>`Man spart ${W} €.`},
- {u:"g",G:[[100,200,300],[100,150,200,250,300],[100,200,250,400]],t:(G,p)=>`Eine Tafel Schokolade wiegt ${G} g. Sie besteht zu ${p} % aus Zucker. Wie viel Gramm Zucker sind das?`,a:W=>`In der Schokolade sind ${W} g Zucker.`},
- {u:"€",t:(G,p)=>`Ein Smartphone kostet ${G} €. Beim Kauf zahlt man ${p} % an. Wie hoch ist die Anzahlung?`,a:W=>`Die Anzahlung beträgt ${W} €.`},
+ {u:"",G:[[20,25,30,40],[25,28,32,50],[24,40,80]],P:[12.5,37.5,62.5,7.5],t:(G,p)=>`In der Klasse 7b sind ${G} Schüler. ${p} % von ihnen fahren mit dem Bus. Wie viele Schüler fahren mit dem Bus?`,a:W=>`${W} Schüler fahren mit dem Bus.`},
+ {u:"€",G:[[200,300,400,500,600,800],[250,350,480,650,900,1200],[400,480,800,1200,2000]],P:[2.5,4.5,7.5,12.5,1.5],t:(G,p)=>`Ein Fahrrad kostet ${G} €. Es gibt ${p} % Rabatt. Wie viel Euro spart man?`,a:W=>`Man spart ${W} €.`},
+ {u:"g",G:[[100,200,300],[100,150,200,250,300],[100,200,250,400]],P:[12.5,37.5,42.5,47.5,52.5,7.5],t:(G,p)=>`Eine Tafel Schokolade wiegt ${G} g. Sie besteht zu ${p} % aus Zucker. Wie viel Gramm Zucker sind das?`,a:W=>`In der Schokolade sind ${W} g Zucker.`},
+ {u:"€",G:[[200,300,400,500,600,800],[150,250,350,480,650,900],[240,400,480,800,1200]],P:[12.5,7.5,2.5,4.5,37.5],t:(G,p)=>`Ein Smartphone kostet ${G} €. Beim Kauf zahlt man ${p} % an. Wie hoch ist die Anzahlung?`,a:W=>`Die Anzahlung beträgt ${W} €.`},
  {u:"",G:[[100,200,300,500],[250,350,400,600],[400,800,1200,2000]],t:(G,p)=>`Bei einer Tombola gibt es ${G} Lose. ${p} % davon sind Gewinne. Wie viele Gewinnlose gibt es?`,a:W=>`Es gibt ${W} Gewinnlose.`},
- {u:"km",G:[[10,12,20,30],[15,18,24,35],[12,16,24,32]],t:(G,p)=>`Eine Wanderung ist ${G} km lang. Bis zur Mittagspause hat die Klasse ${p} % geschafft. Wie viele Kilometer sind das?`,a:W=>`Die Klasse ist schon ${W} km gewandert.`},
- {u:"€",t:(G,p)=>`Eine Reise kostet ${G} €. Frühbucher bekommen ${p} % Rabatt. Wie viel Euro sparen Frühbucher?`,a:W=>`Frühbucher sparen ${W} €.`},
- {u:"€",G:[[400,600,800,1200],[840,960,1250,1500],[800,1200,1600,2400]],t:(G,p)=>`Die Klassenfahrt kostet insgesamt ${G} €. Der Förderverein übernimmt ${p} %. Wie viel Euro zahlt der Förderverein?`,a:W=>`Der Förderverein zahlt ${W} €.`},
+ {u:"km",G:[[10,12,20,30],[15,18,24,35],[12,16,24,32]],P:[12.5,37.5,62.5,87.5,7.5,22.5],t:(G,p)=>`Eine Wanderung ist ${G} km lang. Bis zur Mittagspause hat die Klasse ${p} % geschafft. Wie viele Kilometer sind das?`,a:W=>`Die Klasse ist schon ${W} km gewandert.`},
+ {u:"€",G:[[300,400,500,600,800],[350,480,650,900,1200,2400],[400,800,1200,2000,3500]],P:[2.5,4.5,7.5,12.5],t:(G,p)=>`Eine Reise kostet ${G} €. Frühbucher bekommen ${p} % Rabatt. Wie viel Euro sparen Frühbucher?`,a:W=>`Frühbucher sparen ${W} €.`},
+ {u:"€",G:[[400,600,800,1200],[840,960,1250,1500],[800,1200,1600,2400]],P:[2.5,7.5,12.5,4.5,37.5],t:(G,p)=>`Die Klassenfahrt kostet insgesamt ${G} €. Der Förderverein übernimmt ${p} %. Wie viel Euro zahlt der Förderverein?`,a:W=>`Der Förderverein zahlt ${W} €.`},
  {u:"",G:[[200,500,1000],[1200,1500,2400],[2400,4000,8000]],t:(G,p)=>`Eine Firma stellt ${G} Fahrradreifen her. ${p} % davon haben einen Fehler. Wie viele Reifen haben einen Fehler?`,a:W=>`${W} Reifen haben einen Fehler.`},
- {u:"ml",G:[[200,500,1000],[330,500,750,1000],[750,1000,1500]],t:(G,p)=>`Eine Flasche enthält ${G} ml Saftschorle. ${p} % davon sind Fruchtsaft. Wie viel Milliliter Fruchtsaft sind das?`,a:W=>`In der Flasche sind ${W} ml Fruchtsaft.`},
- {u:"€",G:[[20,30,40,50],[25,35,45,60],[40,80,120]],t:(G,p)=>`Tom bekommt ${G} € Taschengeld im Monat. Er spart ${p} % davon. Wie viel Euro spart er?`,a:W=>`Tom spart ${W} € im Monat.`},
+ {u:"ml",G:[[200,500,1000],[330,500,750,1000],[750,1000,1500]],P:[12.5,37.5,7.5,42.5,62.5],t:(G,p)=>`Eine Flasche enthält ${G} ml Saftschorle. ${p} % davon sind Fruchtsaft. Wie viel Milliliter Fruchtsaft sind das?`,a:W=>`In der Flasche sind ${W} ml Fruchtsaft.`},
+ {u:"€",G:[[20,30,40,50],[25,35,45,60],[40,80,120]],P:[12.5,7.5,2.5,37.5,4.5],t:(G,p)=>`Tom bekommt ${G} € Taschengeld im Monat. Er spart ${p} % davon. Wie viel Euro spart er?`,a:W=>`Tom spart ${W} € im Monat.`},
  {u:"",ueber:true,G:[null,null,[80,120,160,200,240]],t:(G,p)=>`Ein Sportverein hatte im letzten Jahr ${G} Mitglieder. In diesem Jahr sind es ${p} % davon. Wie viele Mitglieder hat der Verein jetzt?`,a:W=>`Der Verein hat jetzt ${W} Mitglieder.`},
  {u:"cm",ueber:true,G:[null,null,[20,40,60,80]],t:(G,p)=>`Eine Sonnenblume war vor einer Woche ${G} cm hoch. Jetzt ist sie ${p} % so hoch wie vorher. Wie hoch ist sie jetzt?`,a:W=>`Die Sonnenblume ist jetzt ${W} cm hoch.`}];
 const EINHEITEN={"€":["€","euro"],"g":["g","gramm"],"km":["km","kilometer"],"ml":["ml","milliliter"],"cm":["cm","zentimeter"]};
 function satzPruef(s,W,u){
   const t=String(s).trim(), worte=t.split(/\s+/).filter(Boolean).length>=3;
-  const zahlen=(t.replace(/(\d)[\s.](?=\d{3}(?!\d))/g,"$1").match(/\d+(?:,\d+)?/g)||[]).map(x=>parseFloat(x.replace(",",".")));
+  const zahlen=(t.replace(/(\d)[\s.](?=\d{3}(?!\d))/g,"$1").match(/\d+(?:[.,]\d+)?/g)||[]).map(x=>parseFloat(x.replace(",",".")));
   const hatZahl=zahlen.some(z=>gleich(z,W));
   const low=t.toLowerCase();
   const hatEinheit=!u||(EINHEITEN[u]||[u]).some(e=>new RegExp(`(^|[^a-zäöüß])${e.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")}(?![a-zäöüß])`).test(low));
@@ -377,9 +383,10 @@ function satzPruef(s,W,u){
 }
 function g2c(lv){
   const pool=SACH.filter(s=>lv===2||!s.ueber), s=lv===2&&rnd(0,3)===0?pick(SACH.filter(x=>x.ueber)):pick(pool.filter(x=>!x.ueber||lv===2));
-  const ps=s.ueber?[110,120,125,150,175]:lv===2?P2[2].filter(p=>p<100):P2[lv];
+  const ps=s.ueber?[110,120,125,150,175]:lv===2?(s.P||P2[2].filter(p=>p<100)):P2[lv]; /* P: zum Sachverhalt passende Kommaprozente */
   const gs=(s.G&&s.G[lv])||G2[lv];
-  const {p,G,W}=pw(lv,s.u?(lv?2:0):0,ps,gs), u=s.u, w=fmt(W,u), muster=s.a(w);
+  const u=s.u;let erg;for(let k=0;k<60;k++){erg=pw(lv,u?(lv?2:0):0,ps,gs);if(u||erg.W!==1)break;} /* keine „1 Schüler fahren“ */
+  const {p,G,W}=erg, w=fmt(W,u), muster=s.a(w);
   const ex=`${G_("G = "+G+(u?" "+u:""))} ist das Ganze, ${P_("p % = "+dez(p)+" %")}, gesucht ist ${W_("W = x")}.<br>${glZeile(G,p)} → ${kreuz(G,p,W)}<br>Antwort: „${muster}“`;
   return{q:s.t(G,dez(p)),kat:String(W),
     form:`<div class="glx"><span>W =</span>${fx(0,"Ergebnis")}${u?`<span class="einheit">${u}</span>`:""}</div><label class="satzlab">Antwortsatz:${fx(1,"Antwortsatz","text").replace('class="fx"','class="fx satz"')}</label>`,
@@ -444,12 +451,12 @@ function g3b(lv){
   const s=pick(SACH3[lv]), u=s.u, mit=x=>x+(u?" "+u:"");
   let G,W,p;
   for(let k=0;k<500;k++){G=pick(s.G);W=rnd(Math.max(1,Math.ceil(G*s.lo/100)),Math.floor(G*s.hi/100));p=rund(W*100/G);
-    if(W>0&&W<(s.art==="plus"?10*G:G)&&Number.isInteger(p*(lv?2:1))&&!(s.ex||[]).includes(G+"/"+W))break;}
+    if(W>0&&W<(s.art==="plus"?10*G:G)&&Number.isInteger(p*(lv?2:1))&&(s.art||W>1)&&!(s.ex||[]).includes(G+"/"+W))break;}
   const N=s.art==="minus"?G-W:s.art==="plus"?G+W:null;
   const antw=s.a(dez(p));
   const diff=s.art==="minus"?`Zuerst den Prozentwert ausrechnen: ${W_("W = "+mit(G)+" − "+mit(N)+" = "+mit(W))}${s.wtxt?" ("+s.wtxt+")":""}.<br>`:
              s.art==="plus"?`Zuerst den Prozentwert ausrechnen: ${W_("W = "+mit(N)+" − "+mit(G)+" = "+mit(W))}.<br>`:"";
-  const ex=`${diff}geg.: ${G_("G = "+mit(G))}, ${W_("W = "+mit(W))} · ges.: ${P_("p in %")}<br>${glZeile3(G,W)} → ${tr3(G,W,p)}<br>Antwort: „${antw}“`;
+  const ex=`${diff}geg.: ${G_("G = "+mit(G))}, ${W_("W = "+mit(W))}<br>ges.: ${P_("p in %")}<br>${glZeile3(G,W)} → ${tr3(G,W,p)}<br>Antwort: „${antw}“`;
   return{q:s.art?s.t(G,N):s.t(G,W),kat:String(p),
     form:`<div class="glx"><span>p =</span>${fx(0,"Ergebnis")}<span class="einheit">%</span></div><label class="satzlab">Antwortsatz:${fx(1,"Antwortsatz","text").replace('class="fx"','class="fx satz"')}</label>`,
     check:v=>[eqN(v[0],p),satzPruef(v[1],p,"%").ok],
@@ -558,7 +565,7 @@ function g4b(lv){
       check:v=>[eqN(v[0],G),satzPruef(v[1],G,u).ok],
       tipp:(v,r)=>eqN(v[0],W*p/100)?"Gesucht ist das Ganze G. Es muss größer sein als "+w+(u?" "+u:"")+".":r[0]?satzTipp(v[1],G,u):"",
       loes:`G = ${dez(G)}${u?" "+u:""}. Antwort: „${muster}“`,
-      ex:`geg.: ${W_("W = "+w+(u?" "+u:""))}, ${P_("p % = "+dez(p)+" %")} · ges.: ${G_("G")}<br>${glZeile4(W,p)} → ${tr4(W,p,G)}<br>Antwort: „${muster}“`};}
+      ex:`geg.: ${W_("W = "+w+(u?" "+u:""))}, ${P_("p % = "+dez(p)+" %")}<br>ges.: ${G_("G")}<br>${glZeile4(W,p)} → ${tr4(W,p,G)}<br>Antwort: „${muster}“`};}
   /* verminderter oder vermehrter Grundwert */
   const art=pick(["minus","minus","plus","follower"]);let G,r,N;
   for(let k=0;k<500;k++){
@@ -605,7 +612,7 @@ function g4c(lv){
 const WARE=[["Ein Hoodie","er"],["Eine Gaming-Maus","sie"],["Ein Controller","er"],["Eine Smartwatch","sie"],["Ein Skateboard","es"],
   ["Ein Fußballtrikot","es"],["Eine Bluetooth-Box","sie"],["Ein Rucksack","er"],["Ein Gaming-Headset","es"],["Eine Jeans","sie"],["Ein Longboard","es"],["Eine Sportjacke","sie"]];
 const TECHNIK=[["Eine Spielkonsole","sie"],["Ein Gaming-Headset","es"],["Ein Tablet","es"],["Ein E-Scooter","er"],["Ein Fahrradhelm","er"],["Eine Smartwatch","sie"]];
-const ERMAESSIGT=[["Ein Manga-Band","er","Bücher"],["Ein Buch für den Urlaub","es","Bücher"],["Der Einkauf für die Klassenparty (Chips, Obst, Saft)","er","Lebensmittel"],["Ein Comic-Sammelband","er","Bücher"]];
+const ERMAESSIGT=[["Ein Manga-Band","er","Bücher"],["Ein Buch für den Urlaub","es","Bücher"],["Der Einkauf für die Klassenparty (Chips, Obst, Brötchen)","er","Lebensmittel"],["Ein Comic-Sammelband","er","Bücher"]];
 const SKONTO=["die Reparatur deines Fahrrads","die Reparatur deines Handydisplays","deine Online-Bestellung (Sportschuhe)","den neuen Akku für dein E-Bike","deinen Platz im Fußballcamp"];
 const klein=s=>s.charAt(0).toLowerCase()+s.slice(1);
 
@@ -688,11 +695,11 @@ const FARB=["#4C9BE8","#F28C52","#5DBB63","#F4C542","#A77BD8","#4DC3C9"];
 const UMFR=[
  {t:"Speicher auf deinem Handy",k:["Fotos","Videos","Apps","frei"]},
  {t:"Handy-Zeit pro Tag",k:["Chat","Musik","Spiele","Sonstiges"]},
- {t:"Wie kommst du zur Schule?",k:["Bus","Fahrrad","zu Fuß","Auto"]},
- {t:"Lieblings-Streamingdienst",k:["Netflix","YouTube","Disney+","Sonstige"]},
- {t:"Lieblingssport der Klasse 7",k:["Fußball","Volleyball","Schwimmen","Tanzen"]},
- {t:"Lieblingsessen in der Mensa",k:["Pizza","Nudeln","Burger","Salat"]},
- {t:"Wofür gibst du dein Taschengeld aus?",k:["Essen","Kleidung","Spiele","Sparen"]}];
+ {z:1,t:"Wie kommst du zur Schule?",k:["Bus","Fahrrad","zu Fuß","Auto"]},
+ {z:1,t:"Lieblings-Streamingdienst",k:["Netflix","YouTube","Disney+","Sonstige"]},
+ {z:1,t:"Lieblingssport der Klasse 7",k:["Fußball","Volleyball","Schwimmen","Tanzen"]},
+ {z:1,t:"Lieblingsessen in der Mensa",k:["Pizza","Nudeln","Burger","Salat"]},
+ {z:1,t:"Wofür gibst du dein Taschengeld aus?",k:["Essen","Kleidung","Spiele","Sparen"]}];
 const tit=u=>u.t.endsWith("?")?`Umfrage „${u.t}“`:u.t;
 const polar=(cx,cy,r,d)=>{const a=(d-90)*Math.PI/180;return[cx+r*Math.cos(a),cy+r*Math.sin(a)];};
 const f1=x=>x.toFixed(1);
@@ -742,7 +749,7 @@ function teile(n,schritt,min){ /* n Prozentsätze, Vielfache von schritt, jeder 
 /* 5-2 Diagramme zeichnen (10 Aufgaben): 0★ Zehnerprozente · 1★ Komma-cm, Winkel aus Fünferprozenten · 2★ Runden auf ganze Grad, Prozentsatz erst aus Anzahlen */
 function g5b(lv,i){
   if(i==null)i=rnd(0,9);
-  const u=pick(UMFR),name=pick(u.k),kreis=i%2===1;
+  const u=pick(lv===2&&i>=5?UMFR.filter(x=>x.z):UMFR),name=pick(u.k),kreis=i%2===1; /* z: echte Umfragen, bei denen Schüler abstimmen */
   let p,vorher="",anz=null;
   if(lv===0)p=pick([10,20,30,40,50,60,70,80,90]);
   else if(lv===1)p=pick([5,15,25,35,45,55,65,75]);
@@ -780,13 +787,13 @@ function stimmtDas(){
 }
 function g5c(lv,i){
   if(i==null)i=rnd(0,9);
-  const u=pick(UMFR);
+  let u=pick(UMFR);
   if(lv===0){
     if(i%2===0){const ziel=pick([50,25,50,25,75]);let rest;
       for(let k=0;k<100;k++){rest=teile(ziel===75?1:ziel===50?2:3,5,10).map(p=>p*(100-ziel)/100);if(rest.every(p=>p>=5&&Number.isInteger(p)))break;}
       const ps=[ziel,...rest],k0=0,svg=kreisDia(ps.map((p,k)=>({name:u.k[k],deg:p*3.6})));
       const art=ziel===50?"ein Halbkreis":ziel===25?"ein Viertelkreis":"drei Viertel des Kreises";
-      return Object.assign(mc(`${tit(u)}: Wie viel Prozent hat „${u.k[k0]}“?`,svg,ziel+" %",["50 %","25 %","75 %","10 %","180 %","90 %"],`„${u.k[k0]}“ ist ${art}: ${ziel===50?"180° = 50 %":ziel===25?"90° = 25 %":"270° = 75 %"}.`),{kat:String(ziel)});}
+      return Object.assign(mc(`${tit(u)}: Wie viel Prozent hat „${u.k[k0]}“?`,svg,ziel+" %",[...["50 %","25 %","75 %"].filter(x=>x!==ziel+" %"),ziel*36/10+" %"],`„${u.k[k0]}“ ist ${art}: ${ziel===50?"180° = 50 %":ziel===25?"90° = 25 %":"270° = 75 %"}.`),{kat:String(ziel)});}
     const ps=teile(4,10,10),k=rnd(0,3);
     return Object.assign(num(`${tit(u)}: Lies ab. Wie viel Prozent hat „${u.k[k]}“?`,ps[k],"%",`Der Abschnitt ist ${ps[k]/10} cm lang. p = Länge in cm · 10 → ${ps[k]/10} · 10 = ${ps[k]} %.`,streifenDia(ps.map((p,j)=>({name:u.k[j],cm:p/10})))),{label:"p =",kat:String(ps[k])});
   }
@@ -799,7 +806,8 @@ function g5c(lv,i){
   if(typ===1){const ps2=ps.filter(p=>p%10===5).length?ps:teile(4,5,10);
     return Object.assign(num(`${tit(u)}: Lies ab. Wie viel Prozent hat „${u.k[k]}“?`,ps2[k],"%",`Der Abschnitt ist ${dez(ps2[k]/10)} cm lang. p = Länge in cm · 10 → ${dez(ps2[k]/10)} · 10 = ${ps2[k]} %.`,
       streifenDia(ps2.map((p,j)=>({name:u.k[j],cm:p/10})))),{label:"p =",kat:String(ps2[k])});}
-  /* Anzahl berechnen */
+  /* Anzahl berechnen: nur echte Umfragen */
+  u=pick(UMFR.filter(x=>x.z));
   const G=pick([20,40,60]),W=G*ps[k]/100,kreis=lv===2?rnd(0,1)===1:true,d=rund(ps[k]*3.6);
   const svg=kreis?kreisDia(ps.map((p,j)=>({name:u.k[j],deg:rund(p*3.6),grad:j===k}))):streifenDia(ps.map((p,j)=>({name:u.k[j],cm:p/10})));
   const ablesen=kreis?`p = ${dez(d)} ÷ 3,6 = ${ps[k]} %`:`p = ${dez(ps[k]/10)} · 10 = ${ps[k]} %`;
@@ -814,7 +822,7 @@ const HERKUNFT=["von der Jugendweihe","aus dem Ferienjob","zum Geburtstag","vom 
 function begriffe(){
   const P=[["das Kapital K","dem Grundwert G"],["die Zinsen Z","dem Prozentwert W"],["der Zinssatz p %","dem Prozentsatz p %"]];
   const [a,b]=pick(P),rev=rnd(0,1)===1;
-  const ex="Kapital K ↔ Grundwert G · Zinsen Z ↔ Prozentwert W · Zinssatz p % ↔ Prozentsatz p %";
+  const ex="Kapital K ↔ Grundwert G<br>Zinsen Z ↔ Prozentwert W<br>Zinssatz p % ↔ Prozentsatz p %";
   if(rev){const ziel=a.replace(/^(das|die|der) /,""),alle=P.map(x=>x[0].replace(/^(das|die|der) /,""));
     return Object.assign(mc(`Zinsrechnung ist Prozentrechnung. Was entspricht ${b}?`,"",ziel,alle.concat(["der Bonus"]),ex),{kat:ziel});}
   const ziel=b.replace(/^dem /,"").replace(/^(\w)/,m=>m),alle=P.map(x=>x[1].replace(/^dem /,""));
@@ -903,13 +911,13 @@ const ruhig=window.matchMedia&&window.matchMedia("(prefers-reduced-motion: reduc
 let lehrerMsg="";
 function home(){
   zahlEl.textContent=summe();mzahl.textContent=S.muenzen;
-  let h=`<p class="sub">Schaffe eine Runde mit ${RUNDE} Aufgaben (bei Sachaufgaben 5) und höchstens ${FEHLER_ERLAUBT} Fehlern, dann bekommst du einen Stern. Ist deine erste Antwort falsch, hast du noch einen zweiten Versuch. Jeder Stern macht das Spiel schwerer. Der erste Stern öffnet das nächste Spiel. Hast du schon drei Sterne, gibt es Bonussterne, und ${BONUS_PRO_MUENZE} Bonussterne werden zu einem Credit.</p><div class="levels">`;
+  let h=`<p class="sub">Schaffe eine Runde mit ${RUNDE} Aufgaben und höchstens ${FEHLER_ERLAUBT} Fehlern (bei Sachaufgaben: 5 Aufgaben und höchstens 1 Fehler), dann bekommst du einen Stern. Ist deine erste Antwort falsch, hast du noch einen zweiten Versuch. Jeder Stern macht das Spiel schwerer. Der erste Stern öffnet das nächste Spiel. Hast du schon drei Sterne, gibt es Bonussterne, und ${BONUS_PRO_MUENZE} Bonussterne werden zu einem Credit.</p><div class="levels">`;
   for(const L of LEVELS){
     if(!L.spiele){h+=`<section class="lv zu"><div class="badge">🔒</div><div class="lvkopf"><div><div class="tag">LEVEL ${L.nr}</div><h2>${L.name}</h2></div><div class="klein">${L.info}</div></div></section>`;continue;}
     const n=L.spiele.length, max=n*3, hat=L.spiele.reduce((a,s)=>a+stars(s.id),0);
     let fertig=0;for(const s of L.spiele){if(stars(s.id)>=1)fertig++;else break;}
     const fill=n>1?Math.min(fertig,n-1)/(n-1)*100:0;
-    h+=`<section class="lv aktiv"><div class="badge">${L.nr}</div><div class="lvkopf"><div><div class="tag">LEVEL ${L.nr}</div><h2>${L.name}</h2></div>
+    h+=`<section class="lv ${L.spiele.some(offen)?"aktiv":"zu"}"><div class="badge">${L.nr}</div><div class="lvkopf"><div><div class="tag">LEVEL ${L.nr}</div><h2>${L.name}</h2></div>
       <div class="zahl">${STERN(true)} ${hat} von ${max} Sternen</div></div><div class="bahn"><div class="linie"><i style="width:${fill}%"></i></div>`;
     for(const s of L.spiele){const o=offen(s), st=stars(s.id), cls=!o?"zu":st>=1?"fertig":"jetzt";
       h+=`<div class="node ${cls}"><button class="kreis" data-play="${s.id}" ${o?"":"disabled"} aria-label="${s.name}${o?"":" (gesperrt)"}">${o?s.nr:"🔒"}</button><b>${s.name}</b>
@@ -923,13 +931,15 @@ function home(){
   h+=`<details${lehrerMsg?" open":""}><summary>Für die Lehrkraft</summary><div class="lehrer">
     <input type="text" id="code" placeholder="Lehrer-Code" autocomplete="off" aria-label="Lehrer-Code">
     <button class="btn hell" id="codeBtn">Alle Spiele freischalten</button>
+    ${S.lehrer?`<button class="btn hell" id="sperr">Wieder sperren</button>`:""}
     <span id="resetBox"><button class="btn hell" id="reset">Fortschritt löschen</button></span>
     <span class="msg">${lehrerMsg}</span></div></details>`;
   app.innerHTML=h;
   app.querySelectorAll("[data-play]").forEach(b=>b.addEventListener("click",()=>start(b.dataset.play)));
   document.getElementById("codeBtn").addEventListener("click",()=>{
     const v=document.getElementById("code").value.trim().toUpperCase();
-    if(v===CODE){S.lehrer=true;save();lehrerMsg="Alle Spiele sind freigeschaltet.";}else lehrerMsg="Der Code stimmt nicht.";home();});
+    if(codeHash(v)===CODE_H){S.lehrer=true;save();lehrerMsg="Alle Spiele sind freigeschaltet.";}else lehrerMsg="Der Code stimmt nicht.";home();});
+  const sp=document.getElementById("sperr");if(sp)sp.addEventListener("click",()=>{S.lehrer=false;save();lehrerMsg="Die Spiele sind wieder gesperrt. Die Sterne bleiben erhalten.";home();});
   document.getElementById("reset").addEventListener("click",()=>{
     document.getElementById("resetBox").innerHTML=`<span class="msg">Wirklich alles löschen?</span> <button class="btn hell" id="resJa">Ja</button> <button class="btn hell" id="resNein">Nein</button>`;
     document.getElementById("resJa").addEventListener("click",()=>{S={stars:{},bonus:{},topf:0,muenzen:0,lehrer:false};save();lehrerMsg="Der Fortschritt wurde gelöscht.";home();});
@@ -962,9 +972,9 @@ function start(id){
   show();
 }
 const punkte=()=>`<div class="dots" aria-label="Fortschritt">${R.aufgaben.map((_,i)=>`<span class="dot ${R.res[i]===true?"ok":R.res[i]==="gelb"?"gelb":R.res[i]===false?"err":i===R.i?"now":""}"></span>`).join("")}</div>`;
-const fehlerAnzeige=()=>{const f=R.res.filter(x=>x===false).length;return `<span id="fehlz" class="fehlz${f>FEHLER_ERLAUBT?" zuviel":""}">Fehler: ${f} (erlaubt: ${FEHLER_ERLAUBT})</span>`;};
+const fehlerAnzeige=()=>{const f=R.res.filter(x=>x===false).length;return `<span id="fehlz" class="fehlz${f>erlaubt(R.n)?" zuviel":""}">Fehler: ${f} (erlaubt: ${erlaubt(R.n)})</span>`;};
 function kopf(){
-  const name=R.id==="m"?"Endgegner":`Spiel ${R.spiel.nr} · ${R.spiel.name}`;
+  const name=R.id==="m"?"Endgegner":`Spiel ${R.spiel.nr}: ${R.spiel.name}`;
   return `<div class="bar"><span class="titel">${name}<small>Schwierigkeit ${"★".repeat(R.lv+1)}</small></span>${fehlerAnzeige()}<button class="btn hell" id="abbr">Zur Übersicht</button></div>${punkte()}`;
 }
 function show(){
@@ -994,7 +1004,7 @@ function show(){
   else{const inp=document.getElementById("ein");inp.focus();
     inp.addEventListener("input",()=>{inp.classList.remove("gelb");if(a.live)document.getElementById("fig").innerHTML=a.live(zahl(inp.value));});
     const btnP=document.getElementById("pruefBtn");const pruef=()=>{
-      const v=parseFloat(inp.value.replace(/\s/g,"").replace(",",".").replace(/[%‰€°]/g,""));if(isNaN(v))return;
+      const v=zahl(inp.value);if(isNaN(v))return;
       const ok=Math.abs(v-a.num)<1e-9;
       if(!ok&&R.versuch===0){R.versuch=1;inp.classList.add("gelb");hinweis(a.tipp?a.tipp(v):"");inp.select();return;}
       inp.classList.remove("gelb");inp.disabled=true;btnP.disabled=true;feedback(ok,a);};
@@ -1015,7 +1025,7 @@ function geschafftText(){const f=R.res.filter(x=>x===false).length,z=R.res.filte
   if(!f)return `Geschafft ohne Fehler mit ${zt}!`;
   return `Geschafft mit ${f} ${f===1?"Fehler":"Fehlern"}${z?" und "+zt:""}!`;}
 function ende(){
-  const richtig=R.res.filter(x=>x).length, fehler=R.n-richtig, geschafft=fehler<=FEHLER_ERLAUBT;
+  const richtig=R.res.filter(x=>x).length, fehler=R.n-richtig, geschafft=fehler<=erlaubt(R.n);
   const vorherOffen=ALLE.filter(offen).length, bossVorher=bossOffen(), alt=summe();
   let neuStern=false,bonus=false,neueMuenze=false;
   if(geschafft&&stars(R.id)<3){S.stars[R.id]=stars(R.id)+1;neuStern=true;save();}
@@ -1024,7 +1034,7 @@ function ende(){
   const neuSpiel=ALLE.filter(offen).length>vorherOffen, neuBoss=!bossVorher&&bossOffen();
   let txt;
   if(geschafft)txt=neuStern?(geschafftText()+" Du bekommst einen Stern."):(neueMuenze?"Bonusstern! Fünf Bonussterne sind voll: Du bekommst einen Credit!":"Bonusstern! Sammle weiter für den nächsten Credit.");
-  else txt=`${richtig} von ${R.n} richtig. Mit höchstens ${FEHLER_ERLAUBT} Fehlern bekommst du einen Stern. Versuch es gleich noch einmal!`;
+  else txt=`${richtig} von ${R.n} richtig. Mit höchstens ${erlaubt(R.n)===1?"einem Fehler":erlaubt(R.n)+" Fehlern"} bekommst du einen Stern. Versuch es gleich noch einmal!`;
   const banner=neuBoss?`<div class="banner">⚔ Der Endgegner ist erschienen!</div>`:neuSpiel?`<div class="banner">🔓 Ein neues Spiel ist freigeschaltet!</div>`:"";
   const s=stars(R.id), zeigt=neuStern?s-1:s;
   app.innerHTML=kopf()+`<section class="card ende"><div class="gross" id="gross">${reihe(zeigt,STERN_KARTE)}</div><p class="frage">${txt}</p>${bonus?`<div class="topf" aria-label="Bonussterne bis zum nächsten Credit">${neueMuenze?"":Array.from({length:BONUS_PRO_MUENZE},(_,i)=>`<i class="${i<S.topf?"voll":""}"></i>`).join("")} <svg viewBox="0 0 300 300"><use href="#credit"/></svg></div>`:""}${banner}
