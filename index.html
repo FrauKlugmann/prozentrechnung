@@ -111,7 +111,8 @@ input[type=text]{font:inherit;border:2px solid var(--glasrand);background:rgba(0
 @media (max-width:640px){
   .bahn{grid-template-columns:repeat(2,minmax(0,1fr))}.bahn .linie{display:none}
   .levels{padding-left:0}.levels:before{display:none}.lv .badge{position:static;width:44px;height:44px;font-size:1.1rem;margin-bottom:8px}
-  .kreis{width:72px;height:72px;font-size:1.3rem}}
+  .kreis{width:72px;height:72px;font-size:1.3rem}
+  .lv.master .bahn{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 .fr{display:inline-flex;flex-direction:column;align-items:center;vertical-align:middle;line-height:1.1;margin:0 .12em;font-size:.95em}
 .fr span:first-child{border-bottom:2px solid currentColor;padding:0 .15em}
@@ -137,6 +138,22 @@ input[type=text]{font:inherit;border:2px solid var(--glasrand);background:rgba(0
 .form .einheit,.satzlab{font-weight:700}
 .dot.gelb{background:#ffd54a;border-color:#ffd54a}
 .fehlz{font-weight:700;font-size:.95rem;background:rgba(255,255,255,.12);border:1.5px solid rgba(255,255,255,.3);border-radius:999px;padding:5px 14px}
+.lv.master,.lv.master.aktiv{background:#141014;border:2px solid #d4af37;box-shadow:0 0 40px rgba(212,175,55,.22)}
+.lv.master .badge{background:#d4af37;color:#2a1e00;border-color:#f5d77a}
+.master .tag{color:#d4af37;letter-spacing:.22em}
+.master h2,.master.zu h2{color:#f5d77a}
+.master .klein{color:#cbb98a}
+.master .zahl{color:#f5d77a}
+.master .bahn{grid-template-columns:repeat(5,minmax(0,1fr))}
+.master .bahn .linie{left:10%;right:10%;background:#4a3d2a}
+.master .bahn .linie i{background:#d4af37}
+.master .node.fertig .kreis{background:radial-gradient(circle at 35% 30%,#fff3c4,#d4af37);color:#2a1e00;border-color:#fff3c4}
+.master .node.jetzt .kreis{background:#fff;color:#141014;border-color:#d4af37;box-shadow:0 0 0 8px rgba(212,175,55,.25),0 0 30px rgba(212,175,55,.7)}
+.master .node.zu .kreis{background:#2a2228;color:#8a7a6a;border-color:#5a4a3a}
+.master .btn{background:#d4af37;color:#2a1e00;box-shadow:0 5px 0 #8a6d14}
+.mcred{display:flex;align-items:center;gap:4px;color:#f5d77a;font-weight:700}
+.mcred svg{width:32px;height:32px}
+.ende .mgross svg{width:90px;height:90px}
 .fehlz.zuviel{background:#ff6b6b;border-color:#ff6b6b;color:#fff}
 </style>
 </head><body>
@@ -201,9 +218,9 @@ const LEVELS=[
     {id:"5d",nr:"5-4",name:"Zinsen",gen:g5d,runde:5}]}];
 const ALLE=LEVELS.flatMap(l=>l.spiele||[]);
 const BONUS_PRO_MUENZE=5, HTML=true, STD_EINHEIT="";
-let S={stars:{},bonus:{},topf:0,muenzen:0,lehrer:false};
+let S={stars:{},bonus:{},topf:0,muenzen:0,mcredit:{},lehrer:false};
 try{const r=localStorage.getItem(KEY);if(r)S=Object.assign(S,JSON.parse(r));}catch(e){}
-S.bonus=S.bonus||{};S.topf=S.topf||0;S.muenzen=S.muenzen||0;
+S.bonus=S.bonus||{};S.mcredit=S.mcredit||{};S.topf=S.topf||0;S.muenzen=S.muenzen||0;
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}}
 const stars=id=>S.stars[id]||0;
 function offen(sp){if(S.lehrer)return true;const i=ALLE.findIndex(t=>t.id===sp.id);return ALLE.slice(0,i).every(t=>stars(t.id)>=1);} /* offen erst, wenn ALLE Spiele davor einen Stern haben */
@@ -298,7 +315,7 @@ function g1c(lv){
 }
 
 /* 1-4 Prozentwert im Kopf */
-const KM={50:{w:"÷ 2",f:G=>G/2},10:{w:"÷ 10",f:G=>G/10},1:{w:"÷ 100",f:G=>G/100},25:{w:"÷ 4",f:G=>G/4},20:{w:"÷ 5",f:G=>G/5},75:{w:"÷ 4 · 3",f:G=>G/4*3}};
+const KM={50:{w:": 2",f:G=>G/2},10:{w:": 10",f:G=>G/10},1:{w:": 100",f:G=>G/100},25:{w:": 4",f:G=>G/4},20:{w:": 5",f:G=>G/5},75:{w:": 4 · 3",f:G=>G/4*3}};
 const KG={50:[20,40,60,80,90,140,160,300],10:[30,50,90,120,250,400,700],1:[100,200,300,500,700,900],25:[20,40,80,120,200,400],20:[20,35,50,60,80,150],75:[12,20,40,60,80,120]};
 function g1d(lv){
   const ps=lv===0?[50,10,1]:lv===1?[25,20,50,10]:[75,25,20,10,1];
@@ -324,7 +341,7 @@ const eqN=(s,n)=>gleich(zahl(s),n);
 const eqX=s=>String(s).trim().toLowerCase()==="x";
 const fmt=(W,u)=>u==="€"&&nk(W)===1?W.toFixed(2).replace(".",","):dez(W);
 const glZeile=(G,p)=>`${fr(G_(G),"100 %")} = ${fr(W_("x"),P_(dez(p)+" %"))}`;
-const kreuz=(G,p,W)=>`x = ${G} · ${dez(p)} ÷ 100 = ${dez(W)}`;
+const kreuz=(G,p,W)=>`x = ${G} · ${dez(p)} : 100 = ${dez(W)}`;
 const fx=(k,lab,mode)=>`<input type="text" class="fx" data-k="${k}" inputmode="${mode||"decimal"}" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="${lab}">`;
 const glForm=()=>glForm4();
 
@@ -408,7 +425,7 @@ function ps3(lv){
     const W=rund(G*p/100);if(Number.isInteger(W)&&W>0&&!VERBRAUCHT.has(G+"/"+W))return{p,G,W};}
   return{p:20,G:350,W:70};}
 const glZeile3=(G,W)=>`${fr(G_(G),"100 %")} = ${fr(W_(W),"x")}`;
-const tr3=(G,W,p)=>`x = ${W} · 100 ÷ ${G} = ${dez(p)} → ${P_("p % = "+dez(p)+" %")}`;
+const tr3=(G,W,p)=>`x = ${W} · 100 : ${G} = ${dez(p)} → ${P_("p % = "+dez(p)+" %")}`;
 const glForm3=()=>`<div class="glw"><span class="glb"><span class="oben">${fx(0,"Zähler links")}</span><span>${fx(1,"Nenner links")} %</span></span><span class="gleich">=</span><span class="glb"><span class="oben">${fx(2,"Zähler rechts")}</span><span>${fx(3,"Nenner rechts","text")}</span></span></div>`;
 
 /* 3-1 p % berechnen: Aufgabe 1–3 Verhältnisgleichung aufstellen · 4–6 Taschenrechner-Zeile · 7–10 nur Ergebnis */
@@ -421,9 +438,9 @@ function g3a(lv,i){
     tipp:v=>eqN(v[0],W)&&eqN(v[1],100)?"G und W sind vertauscht. Das Ganze G steht hinter „von“.":!v.some(t=>eqN(t,100))?"Das Ganze G entspricht 100 %.":!v.some(eqX)?"Schreibe für den gesuchten Prozentsatz x.":"",
     loes:glZeile3(G,W),ex};
   if(i<6)return{q:`Wie viel Prozent sind <b>${auf}</b>? Die Verhältnisgleichung steht schon da:<br>${glZeile3(G,W)}<br>Fülle die Taschenrechner-Zeile aus.`,
-    form:`<div class="glx">x = ${fx(0,"Zahl vor · 100")} · 100 ÷ ${fx(1,"Zahl nach ÷")} = ${fx(2,"Ergebnis x")}</div>`,kat:String(p),
+    form:`<div class="glx">x = ${fx(0,"Zahl vor · 100")} · 100 : ${fx(1,"Zahl nach :")} = ${fx(2,"Ergebnis x")}</div>`,kat:String(p),
     check:v=>[eqN(v[0],W),eqN(v[1],G),eqN(v[2],p)],
-    tipp:v=>eqN(v[0],G)&&eqN(v[1],W)?"Vorne steht W: x = W · 100 ÷ G.":"",
+    tipp:v=>eqN(v[0],G)&&eqN(v[1],W)?"Vorne steht W: x = W · 100 : G.":"",
     loes:tr3(G,W,p),ex};
   return Object.assign(num(`Rechne auf Papier mit der Verhältnisgleichung. Trage nur das Ergebnis ein.<br>Wie viel Prozent sind <b>${auf}</b>?`,p,"%",ex),{label:"p ="});
 }
@@ -522,7 +539,7 @@ function gw4(lv){
     if(W>0&&nk(W)<=(lv?1:0)&&!VERBRAUCHT4.has(dez(W).replace(",",".")+"/"+p))return{p,G,W};}
   return{p:20,G:350,W:70};}
 const glZeile4=(W,p)=>`${fr(G_("x"),"100 %")} = ${fr(W_(dez(W)),P_(dez(p)+" %"))}`;
-const tr4=(W,p,G)=>`x = ${dez(W)} · 100 ÷ ${dez(p)} = ${dez(G)} → ${G_("G = "+dez(G))}`;
+const tr4=(W,p,G)=>`x = ${dez(W)} · 100 : ${dez(p)} = ${dez(G)} → ${G_("G = "+dez(G))}`;
 
 /* 4-1 G berechnen: Aufgabe 1–3 Verhältnisgleichung aufstellen · 4–6 Rechenzeile · 7–10 nur Ergebnis */
 function g4a(lv,i){
@@ -534,9 +551,9 @@ function g4a(lv,i){
     tipp:v=>eqN(v[0],W)&&eqN(v[3],100)?"Gesucht ist das Ganze G. Dort steht x.":!v.slice(0,4).some(eqX)?"Schreibe für den gesuchten Grundwert x.":!v.slice(0,4).some(t=>eqN(t,100))?"Das Ganze G entspricht 100 %.":"",
     loes:glZeile4(W,p),ex};
   if(i<6)return{q:`<b>${auf}</b>. Die Verhältnisgleichung steht schon da:<br>${glZeile4(W,p)}<br>Fülle die Rechenzeile aus.`,
-    form:`<div class="glx">x = ${fx(0,"erste Zahl")} · 100 ÷ ${fx(1,"Zahl nach ÷")} = ${fx(2,"Ergebnis x")}</div>`,kat:String(G),
+    form:`<div class="glx">x = ${fx(0,"erste Zahl")} · 100 : ${fx(1,"Zahl nach :")} = ${fx(2,"Ergebnis x")}</div>`,kat:String(G),
     check:v=>[eqN(v[0],W),eqN(v[1],p),eqN(v[2],G)],
-    tipp:v=>eqN(v[0],p)&&eqN(v[1],W)?"Vorne steht W: x = W · 100 ÷ p.":eqN(v[2],W*p/100)?"Das ist p % von W. Gesucht ist aber das Ganze G.":"",
+    tipp:v=>eqN(v[0],p)&&eqN(v[1],W)?"Vorne steht W: x = W · 100 : p.":eqN(v[2],W*p/100)?"Das ist p % von W. Gesucht ist aber das Ganze G.":"",
     loes:tr4(W,p,G),ex};
   return Object.assign(num(`Rechne auf Papier mit der Verhältnisgleichung. Trage nur das Ergebnis ein.<br><b>${auf}</b>. G = ?`,G,"",ex),
     {label:"G =",tipp:v=>gleich(v,rund(W*p/100))?"Das ist p % von W. Gesucht ist aber das Ganze G – es muss "+(p<100?"größer":"kleiner")+" als W sein.":""});
@@ -583,23 +600,23 @@ function g4b(lv){
     check:v=>[eqN(v[0],G),satzPruef(v[1],G,u).ok],
     tipp:(v,rr)=>eqN(v[0],falsch)?`Achtung: ${Nt}${u?" "+u:""} sind nicht 100 %, sondern ${q} %.`:eqN(v[0],N*q/100)?`${Nt}${u?" "+u:""} sind ${q} %. Gesucht ist das Ganze (100 %).`:rr[0]?satzTipp(v[1],G,u):"",
     loes:`G = ${u?eur(G)+" €":G}. Antwort: „${muster}“`,
-    ex:`${art==="minus"?`Neuer Preis ≙ 100 % − ${r} % = ${q} %`:`Jetzt ≙ 100 % + ${r} % = ${q} %`}, also ${W_(Nt+(u?" "+u:"")+" ≙ "+q+" %")}. Gesucht ist ${G_("G ≙ 100 %")}.<br>${fr(G_("x"),"100 %")} = ${fr(W_(Nt),q+" %")} → x = ${Nt} · 100 ÷ ${q} = ${dez(G)} → ${G_("G = "+(u?eur(G)+" €":G))}<br>Falle: ${r} % von ${Nt}${u?" "+u:""} ${art==="minus"?"dazurechnen":"abziehen"} ist falsch, weil ${Nt}${u?" "+u:""} nicht 100 % sind.`};
+    ex:`${art==="minus"?`Neuer Preis ≙ 100 % − ${r} % = ${q} %`:`Jetzt ≙ 100 % + ${r} % = ${q} %`}, also ${W_(Nt+(u?" "+u:"")+" ≙ "+q+" %")}. Gesucht ist ${G_("G ≙ 100 %")}.<br>${fr(G_("x"),"100 %")} = ${fr(W_(Nt),q+" %")} → x = ${Nt} · 100 : ${q} = ${dez(G)} → ${G_("G = "+(u?eur(G)+" €":G))}<br>Falle: ${r} % von ${Nt}${u?" "+u:""} ${art==="minus"?"dazurechnen":"abziehen"} ist falsch, weil ${Nt}${u?" "+u:""} nicht 100 % sind.`};
 }
 
 /* 4-3 Grundwert im Kopf: 0★ 50, 10, 1 % · 1★ dazu 20, 25 % · 2★ dazu 75, 200 % */
 const S43=[[50,10,1],[50,10,1,20,25],[25,20,75,200,10,50,1]];
 const G43={1:[100,200,300,500,700,900,1200],10:[30,40,60,70,90,120,150,250],20:[15,20,25,35,40,45,60,80],25:[12,16,20,24,28,36,40,60],50:[14,18,24,30,36,48,70,90],75:[8,12,16,20,24,40],200:[6,8,12,15,25,40]};
-const FAKT={1:"· 100",10:"· 10",20:"· 5",25:"· 4",50:"· 2",100:"· 1",75:"÷ 3 · 4",200:"÷ 2"};
+const FAKT={1:"· 100",10:"· 10",20:"· 5",25:"· 4",50:"· 2",100:"· 1",75:": 3 · 4",200:": 2"};
 const VER43=new Set(["30/50","15/25","6/10","16/20","3/1","45/75","120/200","24/10","7/50","5/1","30/20"]);
 function g4c(lv){
   const p=pick(S43[lv]);let G,W;
   for(let k=0;k<200;k++){G=pick(G43[p]);W=G*p/100;if(Number.isInteger(W)&&!VER43.has(W+"/"+p))break;}
   const d=pick(DINGE.filter(x=>W>1||x.m)),einh=d.w;
-  const ex=p===75?`75 % = ${fr(3,4)}. Erst 25 %: ${W} ${einh} ÷ 3 = ${W/3} ${einh}. Dann 100 %: ${W/3} · 4 = ${G} ${einh}.`:
-    p===200?`200 % sind das Doppelte von G. Also ist G die Hälfte von W: ${W} ÷ 2 = ${G} ${einh}.`:
+  const ex=p===75?`75 % = ${fr(3,4)}. Erst 25 %: ${W} ${einh} : 3 = ${W/3} ${einh}. Dann 100 %: ${W/3} · 4 = ${G} ${einh}.`:
+    p===200?`200 % sind das Doppelte von G. Also ist G die Hälfte von W: ${W} : 2 = ${G} ${einh}.`:
     `${p} % = ${anteil(p)}. Also ist G ${100/p}-mal so groß wie W: G = ${W} ${einh} ${FAKT[p]} = ${G} ${einh}.`;
   if(lv>=1&&rnd(0,3)===0)return Object.assign(mc(`W ist ${p} % von G. Wie bekommst du G?`,"","G = W "+FAKT[p],shuffle(Object.values(FAKT).filter(f=>f!==FAKT[p]).map(f=>"G = W "+f)),
-    p===75?"75 % = "+fr(3,4)+": erst ÷ 3 (das sind 25 %), dann · 4.":p===200?"200 % sind das Doppelte von G, also G = W ÷ 2.":`${p} % = ${anteil(p)}, also ist G ${100/p}-mal so groß wie W.`),{kat:FAKT[p]});
+    p===75?"75 % = "+fr(3,4)+": erst : 3 (das sind 25 %), dann · 4.":p===200?"200 % sind das Doppelte von G, also G = W : 2.":`${p} % = ${anteil(p)}, also ist G ${100/p}-mal so groß wie W.`),{kat:FAKT[p]});
   return Object.assign(num(`<b>${W} ${einh}</b> sind <b>${p} %</b> von G. Rechne im Kopf: Wie groß ist G?`,G,einh,ex),
     {label:"G =",kat:String(G),tipp:v=>p<100&&gleich(v,W*p/100)?"G ist das Ganze und größer als W: multipliziere, statt zu dividieren.":p===200&&gleich(v,W*2)?"Bei 200 % ist W doppelt so groß wie G. G ist also kleiner als W.":""});
 }
@@ -627,7 +644,7 @@ function rabattAufgabe(lv,i){
     check:v=>[eqC(v[0],R),eqC(v[1],N),satzPruef(v[2],N,"€").ok],
     tipp:(v,r)=>eqC(v[1],R)?"Der neue Preis ist alter Preis − Rabatt.":eqC(v[0],N)?"Der Rabatt ist der Betrag, den du sparst.":(!r[0]||!r[1])?"":satzTipp(v[2],N,"€"),
     loes:`Rabatt = ${eur(R)} €, neuer Preis = ${eur(N)} €. Antwort: „${muster}“`,
-    ex:`alter Preis ${G_("G = "+G+" €")}, ${P_("p % = "+p+" %")}, Rabatt ${W_("W = x")}<br>${glZeile(G,p)} → x = ${G} · ${p} ÷ 100 = ${eur(R)} → Rabatt ${eur(R)} €<br>neuer Preis: ${G} € − ${eur(R)} € = ${eur(N)} €<br>★ Kurzweg: 100 % − ${p} % = ${100-p} % → x = ${G} · ${100-p} ÷ 100 = ${eur(N)} €`};
+    ex:`alter Preis ${G_("G = "+G+" €")}, ${P_("p % = "+p+" %")}, Rabatt ${W_("W = x")}<br>${glZeile(G,p)} → x = ${G} · ${p} : 100 = ${eur(R)} → Rabatt ${eur(R)} €<br>neuer Preis: ${G} € − ${eur(R)} € = ${eur(N)} €<br>★ Kurzweg: 100 % − ${p} % = ${100-p} % → x = ${G} · ${100-p} : 100 = ${eur(N)} €`};
 }
 function skontoAufgabe(){
   const p=pick([2,3]),G=pick([150,250,80,120,340,95,460,180]),t=pick([7,10,14]),S=cent(G*p/100),N=cent(G-S),muster=`Ich muss ${eur(N)} € zahlen.`;
@@ -636,7 +653,7 @@ function skontoAufgabe(){
     check:v=>[eqC(v[0],S),eqC(v[1],N),satzPruef(v[2],N,"€").ok],
     tipp:(v,r)=>eqC(v[1],S)?"Der Zahlbetrag ist Rechnung − Skonto.":(!r[0]||!r[1])?"":satzTipp(v[2],N,"€"),
     loes:`Skonto = ${eur(S)} €, Zahlbetrag = ${eur(N)} €. Antwort: „${muster}“`,
-    ex:`Rechnung ${G_("G = "+G+" €")}, ${P_("p % = "+p+" %")}, Skonto ${W_("W = x")}<br>${glZeile(G,p)} → x = ${G} · ${p} ÷ 100 = ${eur(S)} → Skonto ${eur(S)} €<br>Zahlbetrag: ${G} € − ${eur(S)} € = ${eur(N)} €<br>★ Kurzweg: 100 % − ${p} % = ${100-p} % → x = ${G} · ${100-p} ÷ 100 = ${eur(N)} €`};
+    ex:`Rechnung ${G_("G = "+G+" €")}, ${P_("p % = "+p+" %")}, Skonto ${W_("W = x")}<br>${glZeile(G,p)} → x = ${G} · ${p} : 100 = ${eur(S)} → Skonto ${eur(S)} €<br>Zahlbetrag: ${G} € − ${eur(S)} € = ${eur(N)} €<br>★ Kurzweg: 100 % − ${p} % = ${100-p} % → x = ${G} · ${100-p} : 100 = ${eur(N)} €`};
 }
 function nettoAufgabe(sieben){
   const [ding,pr,art]=sieben?pick(ERMAESSIGT):pick(TECHNIK),p=sieben?7:19;
@@ -646,7 +663,7 @@ function nettoAufgabe(sieben){
     check:v=>[eqC(v[0],M),eqC(v[1],B),satzPruef(v[2],B,"€").ok],
     tipp:(v,r)=>eqC(v[1],M)?"An der Kasse zahlst du Nettopreis + MwSt.":(!r[0]||!r[1])?"":satzTipp(v[2],B,"€"),
     loes:`MwSt. = ${eur(M)} €, Bruttopreis = ${eur(B)} €. Antwort: „${muster}“`,
-    ex:`Nettopreis ${G_("G = "+G+" €")} ≙ 100 %, ${P_("p % = "+p+" %")}, MwSt. ${W_("W = x")}<br>${glZeile(G,p)} → x = ${G} · ${p} ÷ 100 = ${eur(M)} → MwSt. ${eur(M)} €<br>Bruttopreis: ${G} € + ${eur(M)} € = ${eur(B)} €<br>★ Kurzweg: 100 % + ${p} % = ${100+p} % → x = ${G} · ${100+p} ÷ 100 = ${eur(B)} €`};
+    ex:`Nettopreis ${G_("G = "+G+" €")} ≙ 100 %, ${P_("p % = "+p+" %")}, MwSt. ${W_("W = x")}<br>${glZeile(G,p)} → x = ${G} · ${p} : 100 = ${eur(M)} → MwSt. ${eur(M)} €<br>Bruttopreis: ${G} € + ${eur(M)} € = ${eur(B)} €<br>★ Kurzweg: 100 % + ${p} % = ${100+p} % → x = ${G} · ${100+p} : 100 = ${eur(B)} €`};
 }
 function bruttoAufgabe(sieben){
   const p=sieben?7:19,h=100+p;
@@ -661,7 +678,7 @@ function bruttoAufgabe(sieben){
       eqC(v[4],falsch)?`Achtung: ${p} % von ${eur(B)} € ist falsch, weil ${eur(B)} € schon ${h} % sind.`:!v.slice(0,4).some(eqX)?"Schreibe für die gesuchte MwSt. x.":
       r.slice(0,5).every(Boolean)?satzTipp(v[5],M,"€"):"",
     loes:`${fr(eur(B),h+" %")} = ${fr("x",p+" %")} und MwSt. = ${eur(M)} €. Antwort: „${muster}“`,
-    ex:`Bruttopreis ${eur(B)} € ≙ ${h} %, MwSt. ≙ ${p} %.<br>${fr(eur(B),h+" %")} = ${fr("x",p+" %")} → x = ${eur(B)} · ${p} ÷ ${h} ${glatt?"=":"≈"} ${eur(M)} → MwSt. ${eur(M)} €, netto ${eur(B-M)} €<br>Falle: ${p} % von ${eur(B)} € = ${eur(falsch)} € ist falsch, weil ${eur(B)} € schon ${h} % sind.`};
+    ex:`Bruttopreis ${eur(B)} € ≙ ${h} %, MwSt. ≙ ${p} %.<br>${fr(eur(B),h+" %")} = ${fr("x",p+" %")} → x = ${eur(B)} · ${p} : ${h} ${glatt?"=":"≈"} ${eur(M)} → MwSt. ${eur(M)} €, netto ${eur(B-M)} €<br>Falle: ${p} % von ${eur(B)} € = ${eur(falsch)} € ist falsch, weil ${eur(B)} € schon ${h} % sind.`};
 }
 function vergleichAufgabe(){
   const [ding,pr]=pick(WARE);
@@ -679,7 +696,7 @@ function vergleichAufgabe(){
       tipp:(v,r)=>(eqC(v[0],cent(PA*pa/100))||eqC(v[1],cent(PB*pb/100)))?"Gesucht ist der Preis, den du am Ende zahlst, nicht der Rabatt.":(!r[0]||!r[1])?"":
         !nennt(v[2],"shop",L)?"Schreibe im Antwortsatz, welcher Shop günstiger ist (Shop A oder Shop B).":satzTipp(v[2],N,"€"),
       loes:`Shop A: ${eur(NA)} €, Shop B: ${eur(NB)} €. Antwort: „${muster}“`,
-      ex:`Shop A: 100 % − ${pa} % = ${100-pa} % → x = ${PA} · ${100-pa} ÷ 100 = ${eur(NA)} €<br>Shop B: 100 % − ${pb} % = ${100-pb} % → x = ${PB} · ${100-pb} ÷ 100 = ${eur(NB)} €<br>Shop ${L} ist um ${eur(D)} € günstiger.`};
+      ex:`Shop A: 100 % − ${pa} % = ${100-pa} % → x = ${PA} · ${100-pa} : 100 = ${eur(NA)} €<br>Shop B: 100 % − ${pb} % = ${100-pb} % → x = ${PB} · ${100-pb} : 100 = ${eur(NB)} €<br>Shop ${L} ist um ${eur(D)} € günstiger.`};
   }
   return rabattAufgabe(1,0);
 }
@@ -755,18 +772,18 @@ function g5b(lv,i){
   else if(lv===1)p=pick([5,15,25,35,45,55,65,75]);
   else if(i<5)p=pick([12,23,7,13,17,22,28,33,8,42,14,19,27,31,38,6]);
   else{const G=pick([20,25,50]);let n;for(let k=0;k<100;k++){n=rnd(2,Math.floor(G*.6));if(Number.isInteger(n*100/G)&&(n*100/G)%10!==0)break;}
-    p=n*100/G;anz={G,n};vorher=`${n} von ${G}: x = ${n} · 100 ÷ ${G} = ${p} → ${P_("p % = "+p+" %")}<br>`;}
+    p=n*100/G;anz={G,n};vorher=`${n} von ${G}: x = ${n} · 100 : ${G} = ${p} → ${P_("p % = "+p+" %")}<br>`;}
   const text=anz?`Umfrage in der Klasse 7b „${u.t}“: ${anz.G} Schüler haben abgestimmt, ${anz.n} davon für „${name}“. Berechne zuerst den Prozentsatz.`:`${tit(u)}: „${name}“ hat ${p} %.`;
   if(!kreis){const cm=p/10;
     return{q:`${text}<br>Wie lang wird der Abschnitt im Streifendiagramm (10 cm lang)?`,num:rund(cm),unit:"cm",label:"Länge =",kat:String(cm),
       live:v=>streifenLive(v,name),
       tipp:v=>gleich(v,p)?"Das ist der Prozentsatz. Der ganze Streifen (10 cm) sind 100 %, also 10 % ≙ 1 cm.":anz&&gleich(v,anz.n/10)?"Berechne zuerst den Prozentsatz.":"",
-      ex:`${vorher}10 cm ≙ 100 %, also Länge = p ÷ 10 → ${p} ÷ 10 = ${dez(cm)} cm.`};}
+      ex:`${vorher}10 cm ≙ 100 %, also Länge = p : 10 → ${p} : 10 = ${dez(cm)} cm.`};}
   const exakt=rund(p*3.6),deg=Math.round(p*3.6),gerundet=!Number.isInteger(exakt);
   return{q:`${text}<br>Wie groß wird der Winkel im Kreisdiagramm?${gerundet||lv===2?" Runde auf ganze Grad.":""}`,num:deg,unit:"°",label:"Winkel =",kat:String(deg),
     live:v=>kreisLive(v,name),
     tipp:v=>gleich(v,exakt)&&gerundet?"Runde auf ganze Grad.":gleich(v,p)?"Das ist der Prozentsatz. Rechne ihn in Grad um: 1 % ≙ 3,6°.":anz&&gleich(v,Math.round(anz.n*3.6))?"Berechne zuerst den Prozentsatz.":"",
-    ex:`${vorher}100 % ≙ 360°, also 1 % ≙ 3,6°.<br>Weg 1: ${p} · 3,6 = ${dez(exakt)}${gerundet?` ≈ ${deg}°`:"°"}<br>Weg 2: x = 360 · ${p} ÷ 100 = ${dez(exakt)}${gerundet?` → auf ganze Grad gerundet ${deg}°`:" → "+deg+"°"}`};
+    ex:`${vorher}100 % ≙ 360°, also 1 % ≙ 3,6°.<br>Weg 1: ${p} · 3,6 = ${dez(exakt)}${gerundet?` ≈ ${deg}°`:"°"}<br>Weg 2: x = 360 · ${p} : 100 = ${dez(exakt)}${gerundet?` → auf ganze Grad gerundet ${deg}°`:" → "+deg+"°"}`};
 }
 
 /* 5-3 Diagramme ablesen (10 Aufgaben): 0★ Halb-/Viertelkreis, Streifen mit ganzen cm · 1★ Prozentsatz aus dem Winkel, Streifen mit halben cm, Anzahl berechnen · 2★ „Stimmt das?“, Anzahl berechnen */
@@ -777,7 +794,7 @@ function stimmtDas(){
   if(art==="summe"){const k=rnd(0,3),d=pick([5,10,-5]);if(leg[k]+d<5)leg[k]+=5;else leg[k]+=d;
     const s=leg.reduce((a,b)=>a+b,0);zeich=leg.map(p=>p*100/s);erk=`${leg.map(p=>p+" %").join(" + ")} = ${s} % ≠ 100 %. Also stimmt das Diagramm nicht.`;}
   else if(art==="falsch"){const k=rnd(0,3),j=(k+1+rnd(0,2))%4,d=Math.min(10,ps[j]-5);zeich[k]+=d;zeich[j]-=d;
-    erk=kreis?`„${u.k[k]}“ hat ${ps[k]} %, also ${ps[k]} · 3,6 = ${dez(ps[k]*3.6)}°. Gezeichnet sind aber ${dez(zeich[k]*3.6)}°.`:`„${u.k[k]}“ hat ${ps[k]} %, also ${ps[k]} ÷ 10 = ${dez(ps[k]/10)} cm. Gezeichnet sind aber ${dez(zeich[k]/10)} cm.`;}
+    erk=kreis?`„${u.k[k]}“ hat ${ps[k]} %, also ${ps[k]} · 3,6 = ${dez(ps[k]*3.6)}°. Gezeichnet sind aber ${dez(zeich[k]*3.6)}°.`:`„${u.k[k]}“ hat ${ps[k]} %, also ${ps[k]} : 10 = ${dez(ps[k]/10)} cm. Gezeichnet sind aber ${dez(zeich[k]/10)} cm.`;}
   else erk=`Zusammen sind es ${leg.join(" % + ")} % = 100 %, und jeder Abschnitt passt: ${kreis?ps.map(p=>`${p} % ≙ ${dez(p*3.6)}°`).join(", "):ps.map(p=>`${p} % ≙ ${dez(p/10)} cm`).join(", ")}.`;
   const zeigGrad=kreis&&art!=="summe";
   const svg=kreis?kreisDia(zeich.map((p,k)=>({name:u.k[k],deg:rund(p*3.6),leg:`${u.k[k]}: ${leg[k]} %`,grad:zeigGrad}))):
@@ -801,7 +818,7 @@ function g5c(lv,i){
   if(typ===3)return stimmtDas();
   const ps=teile(4,5,10),k=rnd(0,3);
   if(typ===0){const d=rund(ps[k]*3.6);
-    return Object.assign(num(`${tit(u)}: Wie viel Prozent hat „${u.k[k]}“?`,ps[k],"%",`p = Winkel ÷ 3,6 → ${dez(d)} ÷ 3,6 = ${ps[k]} %.<br>(Oder: x = ${dez(d)} · 100 ÷ 360 = ${ps[k]})`,
+    return Object.assign(num(`${tit(u)}: Wie viel Prozent hat „${u.k[k]}“?`,ps[k],"%",`p = Winkel : 3,6 → ${dez(d)} : 3,6 = ${ps[k]} %.<br>(Oder: x = ${dez(d)} · 100 : 360 = ${ps[k]})`,
       kreisDia(ps.map((p,j)=>({name:u.k[j],deg:rund(p*3.6),grad:j===k})))),{label:"p =",kat:String(ps[k]),tipp:v=>gleich(v,d)?"Das ist der Winkel. Rechne ihn in Prozent um: 3,6° ≙ 1 %.":""});}
   if(typ===1){const ps2=ps.filter(p=>p%10===5).length?ps:teile(4,5,10);
     return Object.assign(num(`${tit(u)}: Lies ab. Wie viel Prozent hat „${u.k[k]}“?`,ps2[k],"%",`Der Abschnitt ist ${dez(ps2[k]/10)} cm lang. p = Länge in cm · 10 → ${dez(ps2[k]/10)} · 10 = ${ps2[k]} %.`,
@@ -810,9 +827,9 @@ function g5c(lv,i){
   u=pick(UMFR.filter(x=>x.z));
   const G=pick([20,40,60]),W=G*ps[k]/100,kreis=lv===2?rnd(0,1)===1:true,d=rund(ps[k]*3.6);
   const svg=kreis?kreisDia(ps.map((p,j)=>({name:u.k[j],deg:rund(p*3.6),grad:j===k}))):streifenDia(ps.map((p,j)=>({name:u.k[j],cm:p/10})));
-  const ablesen=kreis?`p = ${dez(d)} ÷ 3,6 = ${ps[k]} %`:`p = ${dez(ps[k]/10)} · 10 = ${ps[k]} %`;
+  const ablesen=kreis?`p = ${dez(d)} : 3,6 = ${ps[k]} %`:`p = ${dez(ps[k]/10)} · 10 = ${ps[k]} %`;
   return Object.assign(num(`${tit(u)}: ${G} Schüler wurden befragt. Wie viele haben „${u.k[k]}“ gewählt?`,W,"",
-    `Ablesen: ${ablesen}.<br>${glZeile(G,ps[k])} → x = ${G} · ${ps[k]} ÷ 100 = ${W}. Also ${W} Schüler.`,svg),
+    `Ablesen: ${ablesen}.<br>${glZeile(G,ps[k])} → x = ${G} · ${ps[k]} : 100 = ${W}. Also ${W} Schüler.`,svg),
     {label:"Anzahl =",kat:String(W),tipp:v=>gleich(v,ps[k])?"Das ist der Prozentsatz. Wie viele Schüler sind das von "+G+"?":""});
 }
 
@@ -836,7 +853,7 @@ function zinsen(lv){
     form:ergF(0,"Z =","€")+satzF(1),check:v=>[eqC(v[0],Z),satzPruef(v[1],Z,"€").ok],
     tipp:(v,r)=>eqC(v[0],K+Z)?"Gesucht sind nur die Zinsen, nicht das ganze Guthaben.":r[0]?satzTipp(v[1],Z,"€"):"",
     loes:`Z = ${eur(Z)} €. Antwort: „${muster}“`,
-    ex:`Kapital ${G_("K = "+K+" €")}, Zinssatz ${P_("p % = "+dez(p)+" %")}, Zinsen ${W_("Z = x")}<br>${glZeile(K,p)} → x = ${K} · ${dez(p)} ÷ 100 = ${eur(Z)} → Z = ${eur(Z)} €`};
+    ex:`Kapital ${G_("K = "+K+" €")}, Zinssatz ${P_("p % = "+dez(p)+" %")}, Zinsen ${W_("Z = x")}<br>${glZeile(K,p)} → x = ${K} · ${dez(p)} : 100 = ${eur(Z)} → Z = ${eur(Z)} €`};
 }
 function zinssatz(){
   const [n,pr]=pick(SPARER);let K,p,Z;
@@ -844,9 +861,9 @@ function zinssatz(){
   const muster=`Der Zinssatz beträgt ${dez(p)} %.`;
   return{q:`${n} legt ${K} € für ein Jahr bei der Bank an. Nach einem Jahr bekommt ${pr} ${eur(Z)} € Zinsen. Wie hoch ist der Zinssatz?`,kat:String(p),
     form:ergF(0,"p =","%")+satzF(1),check:v=>[eqN(v[0],p),satzPruef(v[1],p,"%").ok],
-    tipp:(v,r)=>eqN(v[0],K/Z)||eqN(v[0],Z*K/100)?"Gesucht ist p: x = Z · 100 ÷ K.":r[0]?satzTipp(v[1],p,"%"):"",
+    tipp:(v,r)=>eqN(v[0],K/Z)||eqN(v[0],Z*K/100)?"Gesucht ist p: x = Z · 100 : K.":r[0]?satzTipp(v[1],p,"%"):"",
     loes:`p = ${dez(p)} %. Antwort: „${muster}“`,
-    ex:`Kapital ${G_("K = "+K+" €")}, Zinsen ${W_("Z = "+eur(Z)+" €")}, gesucht ${P_("p % = x")}<br>${glZeile3(K,eur(Z))} → x = ${eur(Z)} · 100 ÷ ${K} = ${dez(p)} → p % = ${dez(p)} %`};
+    ex:`Kapital ${G_("K = "+K+" €")}, Zinsen ${W_("Z = "+eur(Z)+" €")}, gesucht ${P_("p % = x")}<br>${glZeile3(K,eur(Z))} → x = ${eur(Z)} · 100 : ${K} = ${dez(p)} → p % = ${dez(p)} %`};
 }
 function kapital(){
   const [n,pr]=pick(SPARER);let K,p,Z;
@@ -856,7 +873,7 @@ function kapital(){
     form:ergF(0,"K =","€")+satzF(1),check:v=>[eqC(v[0],K),satzPruef(v[1],K,"€").ok],
     tipp:(v,r)=>eqC(v[0],Z*p/100)?"Die Zinsen sind nur ein Teil. Gesucht ist das Ganze, das Kapital K ≙ 100 %.":r[0]?satzTipp(v[1],K,"€"):"",
     loes:`K = ${K} €. Antwort: „${muster}“`,
-    ex:`Zinsen ${W_("Z = "+eur(Z)+" €")}, Zinssatz ${P_("p % = "+dez(p)+" %")}, gesucht ${G_("K = x")} ≙ 100 %<br>${fr("x","100 %")} = ${fr(eur(Z),dez(p)+" %")} → x = ${eur(Z)} · 100 ÷ ${dez(p)} = ${K} → K = ${K} €`};
+    ex:`Zinsen ${W_("Z = "+eur(Z)+" €")}, Zinssatz ${P_("p % = "+dez(p)+" %")}, gesucht ${G_("K = x")} ≙ 100 %<br>${fr("x","100 %")} = ${fr(eur(Z),dez(p)+" %")} → x = ${eur(Z)} · 100 : ${dez(p)} = ${K} → K = ${K} €`};
 }
 function sparvergleich(){
   const [n,pr]=pick(SPARER);
@@ -869,7 +886,7 @@ function sparvergleich(){
       check:v=>[eqC(v[0],ZA),eqC(v[1],EB),satzPruef(v[2],M,"€").ok&&nennt(v[2],"bank",L)],
       tipp:(v,r)=>eqC(v[1],cent(K*pb/100))?"Bei Bank B kommt noch der Startbonus dazu.":(!r[0]||!r[1])?"":!nennt(v[2],"bank",L)?"Schreibe im Antwortsatz, bei welcher Bank es mehr gibt (Bank A oder Bank B).":satzTipp(v[2],M,"€"),
       loes:`Bank A: ${eur(ZA)} €, Bank B: ${eur(EB)} €. Antwort: „${muster}“`,
-      ex:`Bank A: x = ${K} · ${dez(pa)} ÷ 100 = ${eur(ZA)} €<br>Bank B: x = ${K} · ${dez(pb)} ÷ 100 = ${eur(K*pb/100)} €, dazu ${b} € Bonus → ${eur(EB)} €<br>Bank ${L} bringt ${eur(Math.abs(ZA-EB))} € mehr.`};
+      ex:`Bank A: x = ${K} · ${dez(pa)} : 100 = ${eur(ZA)} €<br>Bank B: x = ${K} · ${dez(pb)} : 100 = ${eur(K*pb/100)} €, dazu ${b} € Bonus → ${eur(EB)} €<br>Bank ${L} bringt ${eur(Math.abs(ZA-EB))} € mehr.`};
   }
   return zinsen(1);
 }
@@ -884,7 +901,7 @@ function ratenzahlung(){
       check:v=>[eqC(v[0],D),eqN(v[1],p),satzPruef(v[2],p,"%").ok],
       tipp:(v,r)=>eqC(v[0],T)?`Das ist der Gesamtbetrag. Wie viel ist das mehr als ${B} €?`:eqN(v[1],rund(D*100/T))?"Der Grundwert ist der Barpreis (100 %).":(!r[0]||!r[1])?"":satzTipp(v[2],p,"%"),
       loes:`Mehrkosten = ${eur(D)} €, p = ${dez(p)} %. Antwort: „${muster}“`,
-      ex:`${n} · ${eur(R)} € = ${eur(T)} € → ${eur(T)} € − ${B} € = ${eur(D)} € mehr<br>Barpreis ${G_("G = "+B+" €")} ≙ 100 %, Mehrkosten ${W_("W = "+eur(D)+" €")}<br>${glZeile3(B,eur(D))} → x = ${eur(D)} · 100 ÷ ${B} = ${dez(p)} → ${P_("p % = "+dez(p)+" %")}`};
+      ex:`${n} · ${eur(R)} € = ${eur(T)} € → ${eur(T)} € − ${B} € = ${eur(D)} € mehr<br>Barpreis ${G_("G = "+B+" €")} ≙ 100 %, Mehrkosten ${W_("W = "+eur(D)+" €")}<br>${glZeile3(B,eur(D))} → x = ${eur(D)} · 100 : ${B} = ${dez(p)} → ${P_("p % = "+dez(p)+" %")}`};
   }
 }
 function g5d(lv,i){
@@ -892,6 +909,212 @@ function g5d(lv,i){
   if(lv===0)return i===0?begriffe():zinsen(0);
   if(lv===1)return i===0?zinsen(1):i<3?zinssatz():kapital();
   return i===0?(rnd(0,1)?zinssatz():kapital()):i<3?sparvergleich():ratenzahlung();
+}
+
+/* ================= Master-Level (nach 3 Sternen im Endgegner) =================
+   5 Spiele, nacheinander freigeschaltet, je Runde 5 Aufgaben, nur Ergebnisse, ohne Tipps.
+   Geschafft = 0 Fehler und höchstens 2 Zweitversuche → einmalig 1 Credit pro Spiel. */
+const r1=x=>Math.round(x*10)/10;
+const pOk=(s,x)=>eqN(s,r1(x))||eqN(s,Math.round(x*100)/100);           /* Prozent: auf 1 oder 2 Stellen gerundet */
+const rundHin=x=>Number.isInteger(rund(x))?"":" Runde auf eine Stelle nach dem Komma.";
+const pz=x=>(Number.isInteger(rund(x))?"":"etwa ")+dez(r1(x));               /* Prozentsatz für die Erklärung */
+const buchst=s=>String(s).trim().toUpperCase().replace(/^(LADEN|SHOP|ANGEBOT)\s*/,"").replace(/[.)]/g,"");
+const abF=(k,lab)=>`<div class="glx"><span>${lab}</span>${fx(k,"A oder B","text")}</div>`;
+const gross=s=>s.charAt(0).toUpperCase()+s.slice(1);
+
+/* M-1 Prozent von Prozent */
+function gm1(lv,i){
+  if(i==null)i=rnd(0,4);
+  const typ=i<2?"rabatt2":i===2?"aufab":i===3?"zweimal":pick(["rabatt2","aufab"]);
+  if(typ==="rabatt2"){const [ding,pr]=pick(WARE);let G,p1,p2,q,S1,E;
+    for(let k=0;k<500;k++){G=pick([40,50,60,80,90,120,150,200]);p1=pick([10,20,25,30,40,50]);p2=pick([5,10,15,20,25]);
+      q=rund((100-p1)*(100-p2)/100);S1=rund(G*(100-p1)/100);E=rund(S1*(100-p2)/100);if(p1!==p2&&nk(q)<=1&&gleich(E,cent(E))&&gleich(S1,cent(S1)))break;}
+    const ges=rund(100-q);
+    return{q:`${ding} kostet ${G} €. Im Sale gibt es ${p1} % Rabatt. An der Kasse bekommst du mit einem Gutschein noch einmal ${p2} % auf den Sale-Preis. Wie viel zahlst du? Wie viel Prozent Rabatt sind das insgesamt?`,kat:String(E),
+      form:ergF(0,"Endpreis =","€")+ergF(1,"Rabatt insgesamt =","%"),
+      check:v=>[eqC(v[0],E),eqN(v[1],ges)],loes:`Endpreis = ${eur(E)} €, Rabatt insgesamt = ${dez(ges)} %.`,
+      ex:`Sale: 100 % − ${p1} % = ${100-p1} % → x = ${G} · ${100-p1} : 100 = ${eur(S1)} €<br>Gutschein: 100 % − ${p2} % = ${100-p2} % → x = ${eur(S1)} · ${100-p2} : 100 = ${eur(E)} €<br>Gespart: ${G} € − ${eur(E)} € = ${eur(G-E)} € → x = ${eur(G-E)} · 100 : ${G} = ${dez(ges)} → ${dez(ges)} % (nicht ${p1+p2} %, weil die ${p2} % vom kleineren Sale-Preis berechnet werden).`};}
+  if(typ==="aufab"){const preis=rnd(0,1)===1;let G,p,A,E;
+    for(let k=0;k<500;k++){G=preis?pick([40,50,60,80,120]):pick([400,500,800,1000,1200,2000]);p=pick([10,20,25,50]);A=rund(G*(100+p)/100);E=rund(A*(100-p)/100);
+      if(preis?gleich(E,cent(E)):Number.isInteger(E))break;}
+    const w=rund(p*p/100),u=preis?"€":"",f=x=>preis?eur(x)+" €":dez(x);
+    const q=preis?`Ein Konzertticket kostet ${G} €. Weil die Nachfrage riesig ist, steigt der Preis um ${p} %. Kurz vor dem Konzert wird der neue Preis um ${p} % gesenkt. Wie viel kostet das Ticket jetzt? Um wie viel Prozent ist es billiger als am Anfang?`:
+      `Dein Kanal hat ${G} Follower. Nach einem viralen Video steigt die Zahl um ${p} %. Danach verlierst du ${p} % deiner Follower wieder. Wie viele Follower hast du jetzt? Um wie viel Prozent sind es weniger als am Anfang?`;
+    return{q,kat:String(E),form:ergF(0,preis?"Preis jetzt =":"Follower jetzt =",u)+ergF(1,"weniger um","%"),
+      check:v=>[preis?eqC(v[0],E):eqN(v[0],E),eqN(v[1],w)],loes:`jetzt ${f(E)}, das sind ${dez(w)} % weniger.`,
+      ex:`Anstieg: 100 % + ${p} % = ${100+p} % → x = ${G} · ${100+p} : 100 = ${f(A)}<br>Senkung: 100 % − ${p} % = ${100-p} % → x = ${dez(A)} · ${100-p} : 100 = ${f(E)}<br>Weniger: ${f(G)} − ${f(E)} = ${f(G-E)} → x = ${dez(rund(G-E))} · 100 : ${G} = ${dez(w)} → ${dez(w)} %.<br>Die ${p} % bei der Senkung werden vom größeren Wert ${f(A)} berechnet.`};}
+  let G,p,P1,P2;
+  for(let k=0;k<500;k++){G=pick([8,10,12,15,20]);p=pick([10,20,30]);P1=rund(G*(100+p)/100);P2=rund(P1*(100+p)/100);if(gleich(P2,cent(P2)))break;}
+  const ges=rund((P2-G)*100/G);
+  return{q:`Dein Streaming-Abo kostet ${eur(G)} € im Monat. Es wird zwei Jahre hintereinander um jeweils ${p} % teurer. Wie viel kostet es danach im Monat? Um wie viel Prozent ist es insgesamt teurer geworden?`,kat:String(P2),
+    form:ergF(0,"Preis danach =","€")+ergF(1,"teurer um","%"),
+    check:v=>[eqC(v[0],P2),eqN(v[1],ges)],loes:`Preis danach = ${eur(P2)} €, insgesamt ${dez(ges)} % teurer.`,
+    ex:`1. Jahr: 100 % + ${p} % = ${100+p} % → x = ${eur(G)} · ${100+p} : 100 = ${eur(P1)} €<br>2. Jahr: x = ${eur(P1)} · ${100+p} : 100 = ${eur(P2)} €<br>Teurer: ${eur(P2)} € − ${eur(G)} € = ${eur(P2-G)} € → x = ${eur(P2-G)} · 100 : ${eur(G)} = ${dez(ges)} → ${dez(ges)} % (nicht ${2*p} %).`};
+}
+
+/* M-2 Rabatt ausgleichen */
+function gm2(lv,i){
+  if(i==null)i=rnd(0,4);
+  const typ=i<2?"zurueck":i===2?"hype":i===3?"alt":pick(["zurueck","hype","alt"]);
+  if(typ==="zurueck"){const [ding,pr]=pick(WARE);let G,p,N;
+    for(let k=0;k<200;k++){G=pick([20,40,60,80,100,120,200]);p=pick([10,20,25,40,50,60,75]);N=rund(G*(100-p)/100);if(gleich(N,cent(N)))break;}
+    const W=rund(G-N),x=p*100/(100-p);
+    return{q:`${ding} kostet ${G} €. Im Sale wird ${pr} um ${p} % billiger. Nach dem Sale soll ${pr} wieder ${G} € kosten. Wie viel kostet ${pr} im Sale? Um wie viel Prozent muss der Sale-Preis erhöht werden?${rundHin(x)}`,kat:String(r1(x)),
+      form:ergF(0,"Sale-Preis =","€")+ergF(1,"Erhöhung um","%"),
+      check:v=>[eqC(v[0],N),pOk(v[1],x)],loes:`Sale-Preis = ${eur(N)} €, Erhöhung um ${dez(r1(x))} %.`,
+      ex:`Sale: 100 % − ${p} % = ${100-p} % → x = ${G} · ${100-p} : 100 = ${eur(N)} €<br>Erhöhung: ${G} € − ${eur(N)} € = ${eur(W)} €. Jetzt ist der Sale-Preis ${eur(N)} € das Ganze (100 %)!<br>x = ${eur(W)} · 100 : ${eur(N)} ${Number.isInteger(rund(x))?"=":"≈"} ${dez(r1(x))} → ${dez(r1(x))} % (nicht ${p} %).`};}
+  if(typ==="hype"){let G,p,A;
+    for(let k=0;k<200;k++){G=pick([200,400,500,800,1000]);p=pick([10,20,25,50,100]);A=rund(G*(100+p)/100);if(Number.isInteger(A))break;}
+    const y=p*100/(100+p);
+    return{q:`Ein Gaming-Kanal hat ${G} Abonnenten. Nach einem Hype steigt die Zahl um ${p} %. Ein halbes Jahr später ist sie wieder auf ${G} gefallen. Wie viele Abonnenten hatte der Kanal nach dem Hype? Um wie viel Prozent ist die Zahl danach gefallen?${rundHin(y)}`,kat:String(r1(y)),
+      form:ergF(0,"nach dem Hype =","")+ergF(1,"gefallen um","%"),
+      check:v=>[eqN(v[0],A),pOk(v[1],y)],loes:`nach dem Hype ${A} Abonnenten, gefallen um ${dez(r1(y))} %.`,
+      ex:`Hype: 100 % + ${p} % = ${100+p} % → x = ${G} · ${100+p} : 100 = ${A}<br>Rückgang: ${A} − ${G} = ${A-G}. Jetzt sind ${A} das Ganze (100 %)!<br>x = ${A-G} · 100 : ${A} ${Number.isInteger(rund(y))?"=":"≈"} ${dez(r1(y))} → ${dez(r1(y))} % (nicht ${p} %).`};}
+  const [ding,pr]=pick(WARE);let G,r,N;
+  for(let k=0;k<200;k++){G=pick([40,50,60,80,100,120,150,200]);r=pick([20,25,40,50]);N=rund(G*(100-r)/100);if(gleich(N,cent(N)))break;}
+  const x=r*100/(100-r);
+  return{q:`Nach ${r} % Rabatt kostet ${klein(ding)} nur noch ${eur(N)} €. Nach dem Sale soll wieder der alte Preis gelten. Wie viel kostete ${pr} vorher? Um wie viel Prozent muss der Preis wieder steigen?${rundHin(x)}`,kat:String(G),
+    form:ergF(0,"alter Preis =","€")+ergF(1,"steigen um","%"),
+    check:v=>[eqC(v[0],G),pOk(v[1],x)],loes:`alter Preis = ${eur(G)} €, steigen um ${dez(r1(x))} %.`,
+    ex:`${eur(N)} € ≙ 100 % − ${r} % = ${100-r} % → x = ${eur(N)} · 100 : ${100-r} = ${eur(G)} → alter Preis ${eur(G)} €<br>Erhöhung: ${eur(G)} € − ${eur(N)} € = ${eur(G-N)} €, Grundwert ist jetzt ${eur(N)} €<br>x = ${eur(G-N)} · 100 : ${eur(N)} ${Number.isInteger(rund(x))?"=":"≈"} ${dez(r1(x))} → ${dez(r1(x))} %`};
+}
+
+/* M-3 Angebote enträtseln */
+const STUECK=[["Ein Energydrink","Energydrinks"],["Ein Donut","Donuts"],["Ein Booster-Pack Sammelkarten","Booster-Packs"],["Ein Schokoriegel","Schokoriegel"],["Ein Eis am Stiel","Eis am Stiel"]];
+const MEHRERE=[["Ein T-Shirt","T-Shirts"],["Ein Paar Sneaker","Paar Sneaker"],["Eine Handyhülle","Handyhüllen"],["Ein Videospiel","Videospiele"],["Eine Cap","Caps"]];
+function gm3(lv,i){
+  if(i==null)i=rnd(0,4);
+  const typ=i===0?"nimm":i===1?"zweites":i===2?"vergleich":i===3?"gutschein":pick(["nimm","zweites"]);
+  if(typ==="nimm"){const [k,m]=pick([[3,2],[4,3],[5,4],[2,1],[6,5],[10,8]]),[sg,pl]=pick(STUECK),P=pick([1.5,2,2.5,3,4,1.2,0.8,1.6]);
+    const Z=cent(m*P),N=cent(k*P),x=(k-m)*100/k;
+    return{q:`Aktion im Supermarkt: „Nimm ${k}, zahl ${m}“. ${sg} kostet ${eur(P)} €. Du nimmst ${k} ${pl}. Wie viel zahlst du? Wie viel Prozent sparst du?${rundHin(x)}`,kat:String(r1(x)),
+      form:ergF(0,"Du zahlst =","€")+ergF(1,"Ersparnis =","%"),
+      check:v=>[eqC(v[0],Z),pOk(v[1],x)],loes:`Du zahlst ${eur(Z)} € und sparst ${dez(r1(x))} %.`,
+      ex:`Normal: ${k} · ${eur(P)} € = ${eur(N)} €. Du zahlst nur ${m} · ${eur(P)} € = ${eur(Z)} €.<br>Gespart: ${eur(N-Z)} € → x = ${eur(N-Z)} · 100 : ${eur(N)} ${Number.isInteger(rund(x))?"=":"≈"} ${dez(r1(x))} → ${dez(r1(x))} %<br>Kurz: ${k-m} von ${k} bekommst du geschenkt.`};}
+  if(typ==="zweites"){const [txt,n,r]=pick([["Das zweite Teil gibt es zum halben Preis.",2,50],["Beim Kauf von zwei Teilen ist das zweite gratis.",2,100],["Kaufst du drei, ist das dritte gratis.",3,100],["Das zweite Teil kostet 30 % weniger.",2,30],["Das zweite Teil kostet 40 % weniger.",2,40]]),[sg,pl]=pick(MEHRERE),P=pick([12,15,18,20,24,30]);
+    const Z=cent(P*(n-1)+P*(100-r)/100),N=n*P,x=r/n;
+    return{q:`${sg} kostet ${P} €. ${txt} Du kaufst ${n} ${pl}. Wie viel zahlst du insgesamt? Wie viel Prozent sparst du?${rundHin(x)}`,kat:String(r1(x)),
+      form:ergF(0,"Du zahlst =","€")+ergF(1,"Ersparnis =","%"),
+      check:v=>[eqC(v[0],Z),pOk(v[1],x)],loes:`Du zahlst ${eur(Z)} € und sparst ${dez(r1(x))} %.`,
+      ex:`Normal: ${n} · ${P} € = ${N} €. Rabatt nur auf ein Teil: ${r} % von ${P} € = ${eur(P*r/100)} €. Du zahlst ${eur(Z)} €.<br>x = ${eur(N-Z)} · 100 : ${N} ${Number.isInteger(rund(x))?"=":"≈"} ${dez(r1(x))} → ${dez(r1(x))} % (nicht ${r} %, weil der Rabatt nur für eins von ${n} Teilen gilt).`};}
+  if(typ==="vergleich"){const [sg,pl]=pick(MEHRERE);let P,p,PA,PB;
+    for(let k=0;k<100;k++){P=pick([9,12,15,18,20,24,30]);p=pick([25,30,35,40]);PA=2*P;PB=cent(3*P*(100-p)/100);if(Math.abs(PA-PB)>=0.5)break;}
+    const L=PA<PB?"A":"B";
+    return{q:`Du willst 3 ${pl} kaufen, jedes Teil kostet ${P} €. Laden A: „Nimm 3, zahl 2“. Laden B: „${p} % auf alles“. Wie viel zahlst du jeweils? In welchem Laden ist es günstiger?`,kat:L+PA,
+      form:ergF(0,"Laden A:","€")+ergF(1,"Laden B:","€")+abF(2,"Günstiger ist Laden"),
+      check:v=>[eqC(v[0],PA),eqC(v[1],PB),buchst(v[2])===L],loes:`Laden A: ${eur(PA)} €, Laden B: ${eur(PB)} €. Laden ${L} ist günstiger.`,
+      ex:`Laden A: 2 · ${P} € = ${eur(PA)} € (das sind ≈ 33,3 % Rabatt)<br>Laden B: 3 · ${P} € = ${3*P} €, 100 % − ${p} % = ${100-p} % → x = ${3*P} · ${100-p} : 100 = ${eur(PB)} €<br>„Nimm 3, zahl 2“ ist besser als jeder Rabatt unter 33,3 %.`};}
+  const [ding,pr]=pick(WARE);let G,g,p,A,B;
+  for(let k=0;k<100;k++){G=pick([40,50,60,80,100,120,150]);g=pick([10,15,20]);p=pick([10,15,20,25]);A=G-g;B=cent(G*(100-p)/100);if(Math.abs(A-B)>=0.5)break;}
+  const L=A<B?"A":"B",ab=rund(g*100/p);
+  return{q:`${ding} kostet ${G} €. Du darfst wählen: A) ein ${g}-€-Gutschein oder B) ${p} % Rabatt. Wie viel zahlst du jeweils? Was ist günstiger?`,kat:L+A,
+    form:ergF(0,"mit A:","€")+ergF(1,"mit B:","€")+abF(2,"Günstiger ist"),
+    check:v=>[eqC(v[0],A),eqC(v[1],B),buchst(v[2])===L],loes:`A: ${eur(A)} €, B: ${eur(B)} €. ${L} ist günstiger.`,
+    ex:`A: ${G} € − ${g} € = ${eur(A)} €<br>B: 100 % − ${p} % = ${100-p} % → x = ${G} · ${100-p} : 100 = ${eur(B)} €<br>Merke: ${p} % sind genau ${g} € bei x = ${g} · 100 : ${p} = ${dez(ab)} €. Ist die Ware teurer als ${dez(ab)} €, lohnt sich der Rabatt, sonst der Gutschein.`};
+}
+
+/* M-4 Zinseszins (jährlich auf Cent runden oder durchrechnen: beides zählt) */
+const jahre=(K,p,n)=>{const a=[K];let k=K;for(let j=0;j<n;j++){k=cent(k*(100+p)/100);a.push(k);}return a;};
+const durch=(K,p,n)=>cent(K*Math.pow((100+p)/100,n));
+const zOk=(s,a,b)=>eqC(s,a)||eqC(s,b);
+function gm4(lv,i){
+  if(i==null)i=rnd(0,4);
+  const [nm,pr]=pick(SPARER);
+  if(i<=1){const n=i===0?2:3,K=pick([200,300,400,500,600,800,1000,1500]),p=pick([1.5,2,2.5,3,4,5]),a=jahre(K,p,n),d=durch(K,p,n),d1=a[1];
+    const tab=a.slice(1).map((x,j)=>`${j+1}. Jahr: x = ${eur(a[j])} · ${dez(100+p)} : 100 ${gleich(x,a[j]*(100+p)/100)?"=":"≈"} ${eur(x)} €`).join("<br>");
+    return{q:`${nm} legt ${K} € ${pick(HERKUNFT)} für ${n} Jahre bei der Bank an. Die Bank zahlt jedes Jahr ${dez(p)} % Zinsen. Die Zinsen bleiben auf dem Konto und werden im nächsten Jahr mitverzinst (Zinseszins). Wie viel Geld hat ${pr} nach 1 Jahr und nach ${n} Jahren? Runde auf Cent.`,kat:String(a[n]),
+      form:ergF(0,"nach 1 Jahr =","€")+ergF(1,`nach ${n} Jahren =`,"€"),
+      check:v=>[eqC(v[0],d1),zOk(v[1],a[n],d)],loes:`nach 1 Jahr ${eur(d1)} €, nach ${n} Jahren ${eur(a[n])} €.`,
+      ex:`Jedes Jahr: 100 % + ${dez(p)} % = ${dez(100+p)} % vom Guthaben des Vorjahres.<br>${tab}${gleich(a[n],d)?"":`<br>(Wer erst ganz am Ende rundet, bekommt ${eur(d)} € – das zählt auch.)`}`};}
+  if(i===2){const n=3,K=pick([400,500,800,1000,1200,2000]),p=pick([2,3,4,5,2.5]),a=jahre(K,p,n),d=durch(K,p,n),E=cent(K+n*K*p/100);
+    return{q:`${nm} hat ${K} € und vergleicht zwei Sparpläne über ${n} Jahre mit je ${dez(p)} % Zinsen. Plan A: Die Zinsen werden jedes Jahr ausgezahlt (einfache Zinsen). Plan B: Die Zinsen bleiben auf dem Konto (Zinseszins). Wie viel Geld hat ${pr} nach ${n} Jahren insgesamt? Runde auf Cent.`,kat:String(a[n]),
+      form:ergF(0,"Plan A (Geld + alle Zinsen) =","€")+ergF(1,"Plan B (Guthaben) =","€"),
+      check:v=>[eqC(v[0],E),zOk(v[1],a[n],d)],loes:`Plan A: ${eur(E)} €, Plan B: ${eur(a[n])} €.`,
+      ex:`Plan A: Zinsen pro Jahr x = ${K} · ${dez(p)} : 100 = ${eur(K*p/100)} €, also ${K} € + ${n} · ${eur(K*p/100)} € = ${eur(E)} €<br>Plan B: ${a.slice(1).map((x,j)=>`${j+1}. Jahr ${eur(x)} €`).join(" → ")}<br>Plan B bringt ${eur(a[n]-E)} € mehr, weil auch die Zinsen Zinsen bekommen.`};}
+  if(i===3){let G,p,n,a;
+    for(let k=0;k<200;k++){G=pick([500,1000,2000,2500,4000,5000]);p=pick([10,20,50]);n=pick([2,3]);a=[G];for(let j=0;j<n;j++)a.push(rund(a[j]*(100+p)/100));if(a.every(Number.isInteger)&&nk((a[n]-G)*100/G)<=1)break;}
+    const ges=rund((a[n]-G)*100/G);
+    return{q:`Dein Kanal hat ${G} Follower und wächst jedes Jahr um ${p} %. Wie viele Follower hast du nach ${n} Jahren? Um wie viel Prozent sind es insgesamt mehr?`,kat:String(a[n]),
+      form:ergF(0,`nach ${n} Jahren =`,"")+ergF(1,"mehr um","%"),
+      check:v=>[eqN(v[0],a[n]),eqN(v[1],ges)],loes:`${a[n]} Follower, insgesamt ${dez(ges)} % mehr.`,
+      ex:`Jedes Jahr ${100+p} % vom Vorjahr: ${a.join(" → ")}<br>Mehr: ${a[n]} − ${G} = ${a[n]-G} → x = ${a[n]-G} · 100 : ${G} = ${dez(ges)} → ${dez(ges)} % (nicht ${n*p} %, weil jedes Jahr vom größeren Wert gerechnet wird).`};}
+  const K=pick([300,400,500,600,800,1000,1200]),p=pick([1.5,2,2.5,3,3.5,4]),Z1=cent(K*p/100),K1=cent(K+Z1),Z2=cent(K1*p/100),Z2b=cent(K*(100+p)/100*p/100);
+  return{q:`${nm} hat ${K} € auf dem Sparbuch. Die Bank zahlt ${dez(p)} % Zinsen pro Jahr, und die Zinsen bleiben auf dem Konto. Wie viele Zinsen bekommt ${pr} im ersten Jahr, und wie viele im zweiten Jahr? Runde auf Cent.`,kat:String(Z2),
+    form:ergF(0,"Zinsen im 1. Jahr =","€")+ergF(1,"Zinsen im 2. Jahr =","€"),
+    check:v=>[eqC(v[0],Z1),zOk(v[1],Z2,Z2b)],loes:`1. Jahr: ${eur(Z1)} €, 2. Jahr: ${eur(Z2)} €.`,
+    ex:`1. Jahr: x = ${K} · ${dez(p)} : 100 = ${eur(Z1)} € → Guthaben ${eur(K1)} €<br>2. Jahr: x = ${eur(K1)} · ${dez(p)} : 100 ${gleich(Z2,K1*p/100)?"=":"≈"} ${eur(Z2)} €<br>Im 2. Jahr gibt es mehr Zinsen, weil auch die ${eur(Z1)} € mitverzinst werden.`};
+}
+
+/* M-5 Stimmt das? (Denkfallen) */
+const ST="Stimmt.";
+const STIMMT_M=[
+ ()=>{const p=pick([20,25,30,50]),q=(100-p)*(100-p)/100,g=rund(100-q);
+   return mc(`„Erst gibt es ${p} % Rabatt und dann auf den neuen Preis noch einmal ${p} %. Zusammen sind das ${2*p} % Rabatt.“ Stimmt das?`,"",`Stimmt nicht: Es sind nur ${dez(g)} % Rabatt.`,[ST,`Stimmt nicht: Es sind sogar mehr als ${2*p} % Rabatt.`,`Stimmt nicht: Es sind nur ${p} % Rabatt.`],
+   `Beispiel 100 €: ${p} % weniger → ${100-p} €, nochmal ${p} % von ${100-p} € weniger → ${dez(q)} €. Gespart: ${dez(g)} € von 100 €, also ${dez(g)} %.`);},
+ ()=>{const p=pick([10,20,25,50]),A=100+p,E=A*(100-p)/100;
+   return mc(`„Ein Preis steigt um ${p} % und sinkt danach um ${p} %. Dann ist er wieder genauso hoch wie vorher.“ Stimmt das?`,"","Stimmt nicht: Er ist jetzt niedriger als vorher.",[ST,"Stimmt nicht: Er ist jetzt höher als vorher."],
+   `Beispiel 100 €: + ${p} % → ${A} €, dann − ${p} % von ${A} € → ${dez(E)} €. Die Senkung wird vom größeren Wert berechnet, deshalb ist es weniger als 100 €.`);},
+ ()=>{const [a,b]=shuffle([10,20,25,30,50]).slice(0,2),E=(100-a)*(100-b)/100;
+   return mc(`„Ob du erst ${a} % und dann ${b} % Rabatt bekommst oder erst ${b} % und dann ${a} %: Am Ende zahlst du dasselbe.“ Stimmt das?`,"",ST,["Stimmt nicht: Erst den größeren Rabatt zu nehmen ist günstiger.","Stimmt nicht: Erst den kleineren Rabatt zu nehmen ist günstiger."],
+   `Beispiel 100 €: erst ${a} %, dann ${b} % → 100 · ${100-a} : 100 = ${100-a}, dann ${100-a} · ${100-b} : 100 = ${dez(E)} €. Andersherum: ${100-b} € → ${dez(E)} €. Beide Male ${dez(E)} €.`);},
+ ()=>{let G,d,x;for(let k=0;k<100;k++){G=pick([20,25,40,50]);d=pick([5,10]);x=d*100/G;if(Number.isInteger(x)&&x!==d)break;}const y=r1(d*100/(G+d));
+   return mc(`„Leas Taschengeld steigt von ${G} € auf ${G+d} €. Das sind ${d} % mehr.“ Stimmt das?`,"",`Stimmt nicht: Es sind ${x} % mehr.`,[ST,`Stimmt nicht: Es sind ${pz(d*100/(G+d))} % mehr.`],
+   `${d} € mehr sind nicht ${d} %. Das Ganze ist das alte Taschengeld: x = ${d} · 100 : ${G} = ${x} → ${x} %.`);},
+ ()=>{const [k,m,beh]=pick([[3,2,"50 %"],[4,3,"30 %"],[5,4,"25 %"]]),x=(k-m)*100/k;
+   return mc(`„Nimm ${k}, zahl ${m}“ ist dasselbe wie ${beh} Rabatt. Stimmt das?`,"",`Stimmt nicht: Es sind nur ${pz(x)} % Rabatt.`,[ST,`Stimmt nicht: Es sind sogar ${pz(100*(k-m)/m)} % Rabatt.`],
+   `Du bekommst ${k-m} von ${k} Teilen geschenkt: x = ${k-m} · 100 : ${k} ${Number.isInteger(x)?"=":"≈"} ${dez(r1(x))} → ${dez(r1(x))} %.`);},
+ ()=>{let G,r,N;for(let k=0;k<100;k++){G=pick([40,60,80,100,120]);r=pick([20,25,50]);N=G*(100-r)/100;if(Number.isInteger(N))break;}const f=N*(100+r)/100;
+   return mc(`„Nach ${r} % Rabatt kostet die Jacke ${eur(N)} €. Also kostete sie vorher ${eur(f)} €.“ Stimmt das?`,"",`Stimmt nicht: Vorher kostete sie ${eur(G)} €.`,[ST,`Stimmt nicht: Vorher kostete sie ${eur(G+20)} €.`],
+   `${eur(N)} € sind nicht 100 %, sondern 100 % − ${r} % = ${100-r} %. x = ${eur(N)} · 100 : ${100-r} = ${eur(G)} → vorher ${eur(G)} €.`);},
+ ()=>{const B=pick([119,238,357,476,595]),M=cent(B*19/119),f=cent(B*19/100);
+   return mc(`„Ein Handy kostet an der Kasse ${B} € mit 19 % Mehrwertsteuer. Die Mehrwertsteuer beträgt also ${eur(f)} €.“ Stimmt das?`,"",`Stimmt nicht: Die Mehrwertsteuer beträgt ${eur(M)} €.`,[ST,`Stimmt nicht: Die Mehrwertsteuer beträgt ${eur(B-M)} €.`],
+   `${B} € sind der Bruttopreis ≙ 119 %, nicht 100 %. x = ${B} · 19 : 119 = ${eur(M)} → MwSt. ${eur(M)} €.`);},
+ ()=>{const [a,b]=pick([[25,20],[100,50],[300,75]]),A=100+a;
+   return mc(`„Ein Preis steigt um ${a} % und sinkt danach um ${b} %. Dann ist er wieder genauso hoch wie vorher.“ Stimmt das?`,"",ST,["Stimmt nicht: Er ist jetzt niedriger als vorher.","Stimmt nicht: Er ist jetzt höher als vorher."],
+   `Beispiel 100 €: + ${a} % → ${A} €, dann − ${b} % von ${A} € → x = ${A} · ${100-b} : 100 = 100 €. Genau der alte Preis.`);},
+ ()=>{let G,p,M;for(let k=0;k<100;k++){G=pick([20,24,25,28,40]);p=pick([25,40,60,75]);M=G*p/100;if(Number.isInteger(M))break;}const J=G-M,w=Math.round(M*(100-p)/100);
+   return mc(`„In der Klasse 7b sind ${p} % der Schüler Mädchen, das sind ${M} Mädchen. Also sind ${J} Schüler Jungen.“ Stimmt das?`,"",ST,[`Stimmt nicht: Es sind ${100-p} Jungen.`,...(w!==J?[`Stimmt nicht: Es sind ${w} Jungen.`]:[`Stimmt nicht: Es sind ${J+2} Jungen.`])],
+   `${M} Mädchen ≙ ${p} % → x = ${M} · 100 : ${p} = ${G} Schüler insgesamt. ${G} − ${M} = ${J} Jungen.`);}];
+function gm5(lv,i){const a=pick(STIMMT_M)();return Object.assign(a,{kat:a.q});}
+
+const MASTER=[
+  {id:"M1",nr:"M-1",name:"Prozent von Prozent",gen:gm1,runde:5},
+  {id:"M2",nr:"M-2",name:"Rabatt ausgleichen",gen:gm2,runde:5},
+  {id:"M3",nr:"M-3",name:"Angebote enträtseln",gen:gm3,runde:5},
+  {id:"M4",nr:"M-4",name:"Zinseszins",gen:gm4,runde:5},
+  {id:"M5",nr:"M-5",name:"Stimmt das?",gen:gm5,runde:5}];
+const masterSichtbar=()=>S.lehrer||stars("m")>=3;
+const mfertig=id=>!!S.mcredit[id];
+function masterOffen(sp){if(S.lehrer)return true;if(stars("m")<3)return false;const i=MASTER.indexOf(sp);return MASTER.slice(0,i).every(t=>mfertig(t.id));}
+const CREDIT_KL=`<svg viewBox="0 0 300 300"><use href="#credit"/></svg>`;
+function masterHTML(){
+  if(!masterSichtbar())return `<section class="lv master zu"><div class="badge">🔒</div><div class="lvkopf"><div><div class="tag">VIP-LOUNGE</div><h2>Master-Level</h2></div><div class="klein">erscheint, wenn der Endgegner 3 Sterne hat</div></div></section>`;
+  const n=MASTER.length,hat=MASTER.filter(t=>mfertig(t.id)).length;let reihe0=0;for(const t of MASTER){if(mfertig(t.id))reihe0++;else break;}
+  const fill=Math.min(reihe0,n-1)/(n-1)*100;
+  let h=`<section class="lv master aktiv"><div class="badge">💎</div><div class="lvkopf"><div><div class="tag">VIP-LOUNGE</div><h2>Master-Level</h2><div class="klein">Knifflige Aufgaben · je Spiel eine Runde mit 5 Aufgaben · geschafft = 1 Credit</div></div>
+    <div class="zahl">${CREDIT_KL.replace("<svg","<svg style=\"width:24px;height:24px\"")} ${hat} von ${n} Credits</div></div><div class="bahn"><div class="linie"><i style="width:${fill}%"></i></div>`;
+  for(const s of MASTER){const o=masterOffen(s),f=mfertig(s.id),cls=!o?"zu":f?"fertig":"jetzt";
+    h+=`<div class="node ${cls}"><button class="kreis" data-play="${s.id}" ${o?"":"disabled"} aria-label="${s.name}${o?"":" (gesperrt)"}">${o?s.nr:"🔒"}</button><b>${s.name}</b>
+      ${cls==="jetzt"?`<button class="btn" data-play="${s.id}">▶ Spielen</button>`:f?`<div class="mcred" title="Credit verdient">${CREDIT_KL} ✓</div>`:""}</div>`;}
+  return h+`</div></section>`;
+}
+function masterEnde(){
+  const rot=R.res.filter(x=>x===false).length,gelb=R.res.filter(x=>x==="gelb").length,geschafft=rot===0&&gelb<=2;
+  const vorher=MASTER.filter(masterOffen).length,alleVorher=MASTER.every(t=>mfertig(t.id));
+  let neu=false;
+  if(geschafft&&!mfertig(R.id)){S.mcredit[R.id]=true;S.muenzen++;neu=true;save();}
+  const zt=gelb?` und ${gelb} ${gelb===1?"Zweitversuch":"Zweitversuchen"}`:"";
+  const txt=geschafft?(neu?`Master-Runde geschafft${gelb?" mit "+gelb+" "+(gelb===1?"Zweitversuch":"Zweitversuchen"):" – fehlerfrei"}! Du bekommst einen Credit.`:`Geschafft! Den Credit für dieses Master-Spiel hast du schon verdient.`):
+    `Diesmal nicht: ${rot} ${rot===1?"Fehler":"Fehler"}${zt}. Für den Credit brauchst du 0 Fehler und höchstens 2 Zweitversuche. Versuch es gleich noch einmal!`;
+  const neuSpiel=MASTER.filter(masterOffen).length>vorher,alle=!alleVorher&&MASTER.every(t=>mfertig(t.id));
+  const banner=alle?`<div class="banner">💎 Du hast alle Master-Spiele geschafft – echter Prozent-Master!</div>`:neuSpiel?`<div class="banner">🔓 Ein neues Master-Spiel ist freigeschaltet!</div>`:"";
+  app.innerHTML=kopf()+`<section class="card ende"><div class="mgross" style="${mfertig(R.id)?"":"opacity:.25;filter:grayscale(1)"}">${CREDIT_KL}</div><p class="frage">${txt}</p>${banner}
+    <div class="row"><button class="btn" id="noch">Noch eine Runde ▶</button><button class="btn hell" id="heim" style="color:#1b2559;background:#eef0f7;box-shadow:0 5px 0 #b9c0dc">Zur Übersicht</button></div></section>`;
+  document.getElementById("abbr").addEventListener("click",home);
+  document.getElementById("noch").addEventListener("click",()=>start(R.id));
+  document.getElementById("heim").addEventListener("click",home);
+  mzahl.textContent=S.muenzen-(neu?1:0);
+  if(neu)muenzFlug(()=>{mzahl.textContent=S.muenzen;muenzer.classList.add("puls");setTimeout(()=>muenzer.classList.remove("puls"),450);});
 }
 
 const BOSS={id:"m",name:"Endgegner",gen:lv=>{const t=pick(ALLE);return t.gen(Math.min(2,1+lv));}};
@@ -911,14 +1134,14 @@ const ruhig=window.matchMedia&&window.matchMedia("(prefers-reduced-motion: reduc
 let lehrerMsg="";
 function home(){
   zahlEl.textContent=summe();mzahl.textContent=S.muenzen;
-  let h=`<p class="sub">Schaffe eine Runde mit ${RUNDE} Aufgaben und höchstens ${FEHLER_ERLAUBT} Fehlern (bei Sachaufgaben: 5 Aufgaben und höchstens 1 Fehler), dann bekommst du einen Stern. Ist deine erste Antwort falsch, hast du noch einen zweiten Versuch. Jeder Stern macht das Spiel schwerer. Der erste Stern öffnet das nächste Spiel. Hast du schon drei Sterne, gibt es Bonussterne, und ${BONUS_PRO_MUENZE} Bonussterne werden zu einem Credit.</p><div class="levels">`;
+  let h=`<p class="sub">Schaffe eine Runde mit ${RUNDE} Aufgaben und höchstens ${FEHLER_ERLAUBT} Fehlern (bei Sachaufgaben: 5 Aufgaben und höchstens 1 Fehler), dann bekommst du einen Stern. Ist deine erste Antwort falsch, hast du noch einen zweiten Versuch. Jeder Stern macht das Spiel schwerer. Der erste Stern öffnet das nächste Spiel. Hast du schon drei Sterne, gibt es Bonussterne, und ${BONUS_PRO_MUENZE} Bonussterne werden zu einem Credit. Wer den Endgegner mit drei Sternen besiegt, kommt ins Master-Level: Jedes Master-Spiel bringt einmal einen Credit.</p><div class="levels">`;
   for(const L of LEVELS){
     if(!L.spiele){h+=`<section class="lv zu"><div class="badge">🔒</div><div class="lvkopf"><div><div class="tag">LEVEL ${L.nr}</div><h2>${L.name}</h2></div><div class="klein">${L.info}</div></div></section>`;continue;}
     const n=L.spiele.length, max=n*3, hat=L.spiele.reduce((a,s)=>a+stars(s.id),0);
     let fertig=0;for(const s of L.spiele){if(stars(s.id)>=1)fertig++;else break;}
     const fill=n>1?Math.min(fertig,n-1)/(n-1)*100:0;
     h+=`<section class="lv ${L.spiele.some(offen)?"aktiv":"zu"}"><div class="badge">${L.nr}</div><div class="lvkopf"><div><div class="tag">LEVEL ${L.nr}</div><h2>${L.name}</h2></div>
-      <div class="zahl">${STERN(true)} ${hat} von ${max} Sternen</div></div><div class="bahn"><div class="linie"><i style="width:${fill}%"></i></div>`;
+      <div class="zahl">${STERN(true)} ${hat} von ${max} Sternen</div></div><div class="bahn"><div class="linie" style="right:${(4-Math.min(4,n))*25+12.5}%"><i style="width:${fill}%"></i></div>`;
     for(const s of L.spiele){const o=offen(s), st=stars(s.id), cls=!o?"zu":st>=1?"fertig":"jetzt";
       h+=`<div class="node ${cls}"><button class="kreis" data-play="${s.id}" ${o?"":"disabled"} aria-label="${s.name}${o?"":" (gesperrt)"}">${o?s.nr:"🔒"}</button><b>${s.name}</b>
         ${cls==="jetzt"?`<button class="btn" data-play="${s.id}">▶ Spielen</button>`:`<div class="sterne">${reihe(st)}</div>`}${(S.bonus[s.id]||0)?`<span class="bonus" title="Bonussterne">+${S.bonus[s.id]} Bonus</span>`:""}</div>`;}
@@ -927,7 +1150,7 @@ function home(){
   const bo=bossOffen();
   h+=`<section class="lv boss${bo?" aktiv":" zu"}"><div class="badge">${bo?"⚔":"🔒"}</div><div class="lvkopf"><div><div class="tag">FINALE</div><h2>Endgegner</h2><div class="klein">Aufgaben aus allen Leveln</div></div>
     ${bo?`<div class="zahl">${STERN(true)} ${stars("m")} von 3 Sternen</div>`:`<div class="klein">erscheint, wenn jedes Spiel mindestens einen Stern hat</div>`}</div>
-    ${bo?`<div class="bossrow"><div class="sterne">${reihe(stars("m"))}</div>${(S.bonus.m||0)?`<span class="bonus">+${S.bonus.m} Bonus</span>`:""}<button class="btn gold" data-play="m">⚔ Kämpfen</button></div>`:""}</section></div>`;
+    ${bo?`<div class="bossrow"><div class="sterne">${reihe(stars("m"))}</div>${(S.bonus.m||0)?`<span class="bonus">+${S.bonus.m} Bonus</span>`:""}<button class="btn gold" data-play="m">⚔ Kämpfen</button></div>`:""}</section>`+masterHTML()+`</div>`;
   h+=`<details${lehrerMsg?" open":""}><summary>Für die Lehrkraft</summary><div class="lehrer">
     <input type="text" id="code" placeholder="Lehrer-Code" autocomplete="off" aria-label="Lehrer-Code">
     <button class="btn hell" id="codeBtn">Alle Spiele freischalten</button>
@@ -942,7 +1165,7 @@ function home(){
   const sp=document.getElementById("sperr");if(sp)sp.addEventListener("click",()=>{S.lehrer=false;save();lehrerMsg="Die Spiele sind wieder gesperrt. Die Sterne bleiben erhalten.";home();});
   document.getElementById("reset").addEventListener("click",()=>{
     document.getElementById("resetBox").innerHTML=`<span class="msg">Wirklich alles löschen?</span> <button class="btn hell" id="resJa">Ja</button> <button class="btn hell" id="resNein">Nein</button>`;
-    document.getElementById("resJa").addEventListener("click",()=>{S={stars:{},bonus:{},topf:0,muenzen:0,lehrer:false};save();lehrerMsg="Der Fortschritt wurde gelöscht.";home();});
+    document.getElementById("resJa").addEventListener("click",()=>{S={stars:{},bonus:{},topf:0,muenzen:0,mcredit:{},lehrer:false};save();lehrerMsg="Der Fortschritt wurde gelöscht.";home();});
     document.getElementById("resNein").addEventListener("click",home);});
   window.scrollTo({top:0});
 }
@@ -951,9 +1174,10 @@ let R=null, letzte="";
 const schluessel=a=>a.q+"|"+(a.svg||"")+"|"+(a.opts?a.opts.slice().sort().join("/"):a.form?a.loes:a.num);
 function start(id){
   zahlEl.textContent=summe();
-  const spiel=id==="m"?BOSS:ALLE.find(t=>t.id===id);
-  const lv=Math.min(2,stars(id));
-  R={spiel,id,lv,n:spiel.runde||RUNDE,i:0,res:[],aufgaben:[]};
+  const ma=MASTER.find(t=>t.id===id);
+  const spiel=id==="m"?BOSS:ma||ALLE.find(t=>t.id===id);
+  const lv=ma?0:Math.min(2,stars(id));
+  R={spiel,id,lv,n:spiel.runde||RUNDE,i:0,res:[],aufgaben:[],master:!!ma};
   const seen=new Set();let versuche=0,grenz=0;
   const kat=a=>a.kat||(a.opts?a.opts[a.ans]:a.q);
   while(R.aufgaben.length<R.n){
@@ -972,10 +1196,10 @@ function start(id){
   show();
 }
 const punkte=()=>`<div class="dots" aria-label="Fortschritt">${R.aufgaben.map((_,i)=>`<span class="dot ${R.res[i]===true?"ok":R.res[i]==="gelb"?"gelb":R.res[i]===false?"err":i===R.i?"now":""}"></span>`).join("")}</div>`;
-const fehlerAnzeige=()=>{const f=R.res.filter(x=>x===false).length;return `<span id="fehlz" class="fehlz${f>erlaubt(R.n)?" zuviel":""}">Fehler: ${f} (erlaubt: ${erlaubt(R.n)})</span>`;};
+const fehlerAnzeige=()=>{const f=R.res.filter(x=>x===false).length;if(R.master){const z=R.res.filter(x=>x==="gelb").length;return `<span id="fehlz" class="fehlz${f>0||z>2?" zuviel":""}">Fehler: ${f} (erlaubt: 0) · Zweitversuche: ${z} (erlaubt: 2)</span>`;}return `<span id="fehlz" class="fehlz${f>erlaubt(R.n)?" zuviel":""}">Fehler: ${f} (erlaubt: ${erlaubt(R.n)})</span>`;};
 function kopf(){
-  const name=R.id==="m"?"Endgegner":`Spiel ${R.spiel.nr}: ${R.spiel.name}`;
-  return `<div class="bar"><span class="titel">${name}<small>Schwierigkeit ${"★".repeat(R.lv+1)}</small></span>${fehlerAnzeige()}<button class="btn hell" id="abbr">Zur Übersicht</button></div>${punkte()}`;
+  const name=R.id==="m"?"Endgegner":R.master?`Master ${R.spiel.nr}: ${R.spiel.name}`:`Spiel ${R.spiel.nr}: ${R.spiel.name}`;
+  return `<div class="bar"><span class="titel">${name}<small>${R.master?"💎 Master-Level":"Schwierigkeit "+"★".repeat(R.lv+1)}</small></span>${fehlerAnzeige()}<button class="btn hell" id="abbr">Zur Übersicht</button></div>${punkte()}`;
 }
 function show(){
   const a=R.aufgaben[R.i];R.versuch=0;
@@ -1025,8 +1249,9 @@ function geschafftText(){const f=R.res.filter(x=>x===false).length,z=R.res.filte
   if(!f)return `Geschafft ohne Fehler mit ${zt}!`;
   return `Geschafft mit ${f} ${f===1?"Fehler":"Fehlern"}${z?" und "+zt:""}!`;}
 function ende(){
+  if(R.master)return masterEnde();
   const richtig=R.res.filter(x=>x).length, fehler=R.n-richtig, geschafft=fehler<=erlaubt(R.n);
-  const vorherOffen=ALLE.filter(offen).length, bossVorher=bossOffen(), alt=summe();
+  const vorherOffen=ALLE.filter(offen).length, bossVorher=bossOffen(), masterVorher=masterSichtbar(), alt=summe();
   let neuStern=false,bonus=false,neueMuenze=false;
   if(geschafft&&stars(R.id)<3){S.stars[R.id]=stars(R.id)+1;neuStern=true;save();}
   else if(geschafft){S.bonus[R.id]=(S.bonus[R.id]||0)+1;S.topf++;bonus=true;
@@ -1035,7 +1260,8 @@ function ende(){
   let txt;
   if(geschafft)txt=neuStern?(geschafftText()+" Du bekommst einen Stern."):(neueMuenze?"Bonusstern! Fünf Bonussterne sind voll: Du bekommst einen Credit!":"Bonusstern! Sammle weiter für den nächsten Credit.");
   else txt=`${richtig} von ${R.n} richtig. Mit höchstens ${erlaubt(R.n)===1?"einem Fehler":erlaubt(R.n)+" Fehlern"} bekommst du einen Stern. Versuch es gleich noch einmal!`;
-  const banner=neuBoss?`<div class="banner">⚔ Der Endgegner ist erschienen!</div>`:neuSpiel?`<div class="banner">🔓 Ein neues Spiel ist freigeschaltet!</div>`:"";
+  const neuMaster=!masterVorher&&masterSichtbar();
+  const banner=neuMaster?`<div class="banner">💎 Das Master-Level ist freigeschaltet!</div>`:neuBoss?`<div class="banner">⚔ Der Endgegner ist erschienen!</div>`:neuSpiel?`<div class="banner">🔓 Ein neues Spiel ist freigeschaltet!</div>`:"";
   const s=stars(R.id), zeigt=neuStern?s-1:s;
   app.innerHTML=kopf()+`<section class="card ende"><div class="gross" id="gross">${reihe(zeigt,STERN_KARTE)}</div><p class="frage">${txt}</p>${bonus?`<div class="topf" aria-label="Bonussterne bis zum nächsten Credit">${neueMuenze?"":Array.from({length:BONUS_PRO_MUENZE},(_,i)=>`<i class="${i<S.topf?"voll":""}"></i>`).join("")} <svg viewBox="0 0 300 300"><use href="#credit"/></svg></div>`:""}${banner}
     <div class="row"><button class="btn" id="noch">${neuStern&&s<3?"Nächste Runde (schwerer) ▶":"Noch eine Runde ▶"}</button><button class="btn hell" id="heim" style="color:#1b2559;background:#eef0f7;box-shadow:0 5px 0 #b9c0dc">Zur Übersicht</button></div></section>`;
